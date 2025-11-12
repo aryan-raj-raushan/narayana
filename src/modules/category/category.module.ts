@@ -9,7 +9,7 @@ import { SubcategoryModule } from '../subcategory/subcategory.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Category.name, schema: CategorySchema }]),
-    GenderModule,
+    forwardRef(() => GenderModule),
     forwardRef(() => SubcategoryModule),
   ],
   controllers: [CategoryController],

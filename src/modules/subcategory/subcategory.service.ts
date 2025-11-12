@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Subcategory } from './schemas/subcategory.schema';
@@ -12,6 +12,7 @@ export class SubcategoryService {
   constructor(
     @InjectModel(Subcategory.name)
     private subcategoryModel: Model<Subcategory>,
+    @Inject(forwardRef(() => CategoryService))
     private categoryService: CategoryService,
   ) {}
 

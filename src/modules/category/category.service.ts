@@ -13,6 +13,7 @@ export class CategoryService {
   constructor(
     @InjectModel(Category.name)
     private categoryModel: Model<Category>,
+    @Inject(forwardRef(() => GenderService))
     private genderService: GenderService,
     @Inject(forwardRef(() => SubcategoryService))
     private subcategoryService: SubcategoryService,
