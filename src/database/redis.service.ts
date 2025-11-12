@@ -10,15 +10,39 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
-    const redisConfig = {
-      host: this.configService.get<string>('database.redis.host'),
-      port: this.configService.get<number>('database.redis.port'),
-      password: this.configService.get<string>('database.redis.password'),
+    const host = this.configService.get<string>('database.redis.host');
+    const port = this.configService.get<number>('database.redis.port');
+    const password = this.configService.get<string>('database.redis.password');
+    const tls = this.configService.get<any>('database.redis.tls');
+
+    const redisConfig: any = {
+      host,
+      port,
+      password,
+      maxRetriesPerRequest: 3,
       retryStrategy: (times: number) => {
-        const delay = Math.min(times * 50, 2000);
+        if (times > 3) {
+          this.logger.error('Redis max retries reached, stopping...');
+          return null;
+        }
+        const delay = Math.min(times * 1000, 3000);
         return delay;
       },
+      reconnectOnError: (err) => {
+        const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT'];
+        if (targetErrors.some((targetError) => err.message.includes(targetError))) {
+          return true;
+        }
+        return false;
+      },
     };
+
+    // Add TLS configuration if enabled
+    if (tls) {
+      redisConfig.tls = {
+        rejectUnauthorized: false,
+      };
+    }
 
     this.client = new Redis(redisConfig);
 
@@ -27,11 +51,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
 
     this.client.on('error', (error) => {
-      this.logger.error('Redis connection error:', error);
+      this.logger.error('Redis connection error:', error.message);
     });
 
     this.client.on('ready', () => {
       this.logger.log('Redis is ready to accept commands');
+    });
+
+    this.client.on('reconnecting', () => {
+      this.logger.warn('Redis reconnecting...');
     });
   }
 
