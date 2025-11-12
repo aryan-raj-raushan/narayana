@@ -8,6 +8,7 @@ import {
   TextInput,
   FlatList,
   RefreshControl,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -27,7 +28,6 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useAppDispatch();
   const { featuredProducts, loading } = useAppSelector((state) => state.product);
-  const { cart } = useAppSelector((state) => state.cart);
   const [genders, setGenders] = useState<Gender[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,7 +62,6 @@ const HomeScreen: React.FC = () => {
   const handleSearch = () => {
     if (searchQuery.trim()) {
       navigation.navigate('ProductList', {});
-      // Search will be handled in ProductListScreen
     }
   };
 
@@ -76,25 +75,20 @@ const HomeScreen: React.FC = () => {
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50"
+      style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* Header */}
-      <View className="bg-primary px-4 pt-12 pb-6">
-        <View className="flex-row justify-between items-center mb-4">
-          <Text className="text-white text-2xl font-bold">eCommerce</Text>
-          <View className="flex-row">
-            <TouchableOpacity className="mr-4">
-              <Ionicons name="notifications-outline" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>eCommerce</Text>
+          <TouchableOpacity>
+            <Ionicons name="notifications-outline" size={24} color="white" />
+          </TouchableOpacity>
         </View>
-
-        {/* Search Bar */}
-        <View className="bg-white rounded-lg flex-row items-center px-4 py-2">
+        <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color="#666" />
           <TextInput
-            className="flex-1 ml-2 text-base"
+            style={styles.searchInput}
             placeholder="Search products..."
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -103,38 +97,36 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Gender Categories */}
-      <View className="px-4 py-6">
-        <Text className="text-lg font-bold mb-3">Shop by Gender</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Shop by Gender</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
           {genders.map((gender) => (
             <TouchableOpacity
               key={gender._id}
-              className="mr-4 items-center"
+              style={styles.genderItem}
               onPress={() => handleCategoryPress(gender._id)}
             >
-              <View className="w-20 h-20 rounded-full bg-purple-100 items-center justify-center mb-2">
+              <View style={styles.genderIconContainer}>
                 <Ionicons name="person" size={32} color="#6200ee" />
               </View>
-              <Text className="text-sm font-medium">{gender.name}</Text>
+              <Text style={styles.genderName}>{gender.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      {/* Categories */}
-      <View className="px-4 pb-6">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-lg font-bold">Categories</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Categories</Text>
           <TouchableOpacity onPress={() => navigation.navigate('ProductList', {})}>
-            <Text className="text-primary font-medium">View All</Text>
+            <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
-        <View className="flex-row flex-wrap">
+        <View style={styles.categoriesGrid}>
           {categories.slice(0, 6).map((category) => (
             <TouchableOpacity
               key={category._id}
-              className="w-[48%] mb-3 mr-[2%] bg-white rounded-lg p-4 shadow-sm"
+              style={styles.categoryCard}
               onPress={() =>
                 handleCategoryPress(
                   typeof category.gender === 'string' ? category.gender : category.gender._id,
@@ -142,26 +134,24 @@ const HomeScreen: React.FC = () => {
                 )
               }
             >
-              <View className="w-12 h-12 rounded-lg bg-blue-100 items-center justify-center mb-2">
+              <View style={styles.categoryIconContainer}>
                 <Ionicons name="grid" size={24} color="#2196f3" />
               </View>
-              <Text className="text-sm font-semibold">{category.name}</Text>
+              <Text style={styles.categoryName}>{category.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      {/* Featured Products */}
-      <View className="px-4 pb-6">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-lg font-bold">Featured Products</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Featured Products</Text>
           <TouchableOpacity onPress={() => navigation.navigate('ProductList', {})}>
-            <Text className="text-primary font-medium">View All</Text>
+            <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
-
         {loading ? (
-          <Text className="text-center py-8 text-gray-500">Loading...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         ) : (
           <FlatList
             data={featuredProducts}
@@ -170,42 +160,30 @@ const HomeScreen: React.FC = () => {
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => (
               <TouchableOpacity
-                className="mr-4 w-40"
+                style={styles.productCard}
                 onPress={() => handleProductPress(item._id)}
               >
-                <View className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  {item.images && item.images.length > 0 ? (
-                    <Image
-                      source={{ uri: item.images[0] }}
-                      className="w-full h-40"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="w-full h-40 bg-gray-200 items-center justify-center">
-                      <Ionicons name="image-outline" size={40} color="#999" />
-                    </View>
-                  )}
-                  <View className="p-3">
-                    <Text className="text-sm font-semibold mb-1" numberOfLines={2}>
-                      {item.name}
-                    </Text>
-                    <View className="flex-row items-center">
-                      <Text className="text-primary font-bold text-base">₹{item.price}</Text>
-                      {item.discountedPrice && (
-                        <Text className="text-gray-400 line-through text-xs ml-2">
-                          ₹{item.discountedPrice}
-                        </Text>
-                      )}
-                    </View>
-                    {item.stock <= 10 && item.stock > 0 && (
-                      <Text className="text-orange-500 text-xs mt-1">
-                        Only {item.stock} left!
-                      </Text>
-                    )}
-                    {item.stock === 0 && (
-                      <Text className="text-red-500 text-xs mt-1">Out of Stock</Text>
+                {item.images && item.images.length > 0 ? (
+                  <Image source={{ uri: item.images[0] }} style={styles.productImage} resizeMode="cover" />
+                ) : (
+                  <View style={styles.productImagePlaceholder}>
+                    <Ionicons name="image-outline" size={40} color="#999" />
+                  </View>
+                )}
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.productPrice}>₹{item.price}</Text>
+                    {item.discountedPrice && (
+                      <Text style={styles.productDiscountPrice}>₹{item.discountedPrice}</Text>
                     )}
                   </View>
+                  {item.stock <= 10 && item.stock > 0 && (
+                    <Text style={styles.lowStockText}>Only {item.stock} left!</Text>
+                  )}
+                  {item.stock === 0 && (
+                    <Text style={styles.outOfStockText}>Out of Stock</Text>
+                  )}
                 </View>
               </TouchableOpacity>
             )}
@@ -213,19 +191,221 @@ const HomeScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Banner */}
-      <View className="mx-4 mb-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-6">
-        <Text className="text-white text-xl font-bold mb-2">Special Offer!</Text>
-        <Text className="text-white mb-4">Get up to 50% off on selected items</Text>
+      <View style={styles.banner}>
+        <Text style={styles.bannerTitle}>Special Offer!</Text>
+        <Text style={styles.bannerSubtitle}>Get up to 50% off on selected items</Text>
         <TouchableOpacity
-          className="bg-white rounded-lg py-2 px-4 self-start"
+          style={styles.bannerButton}
           onPress={() => navigation.navigate('ProductList', {})}
         >
-          <Text className="text-primary font-semibold">Shop Now</Text>
+          <Text style={styles.bannerButtonText}>Shop Now</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#6200ee',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 24,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  searchContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  viewAllText: {
+    color: '#6200ee',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  horizontalScroll: {
+    marginTop: 12,
+  },
+  genderItem: {
+    marginRight: 16,
+    alignItems: 'center',
+  },
+  genderIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#e1bee7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  genderName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  categoryCard: {
+    width: '48%',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#bbdefb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  loadingText: {
+    textAlign: 'center',
+    paddingVertical: 32,
+    color: '#666',
+    fontSize: 16,
+  },
+  productCard: {
+    marginRight: 16,
+    width: 160,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  productImage: {
+    width: '100%',
+    height: 160,
+  },
+  productImagePlaceholder: {
+    width: '100%',
+    height: 160,
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productInfo: {
+    padding: 12,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: '#333',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  productPrice: {
+    color: '#6200ee',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  productDiscountPrice: {
+    color: '#999',
+    textDecorationLine: 'line-through',
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  lowStockText: {
+    color: '#ff9800',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  outOfStockText: {
+    color: '#f44336',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  banner: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    backgroundColor: '#9c27b0',
+    borderRadius: 12,
+    padding: 24,
+  },
+  bannerTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  bannerSubtitle: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  bannerButton: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignSelf: 'flex-start',
+  },
+  bannerButtonText: {
+    color: '#9c27b0',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+});
 
 export default HomeScreen;
