@@ -9,9 +9,9 @@ import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import orderService from '../../services/order.service';
 import { Order, OrderStatus, Product } from '../../types';
 
@@ -19,8 +19,18 @@ const OrderManagementScreen: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const statusOptions = [
+    { value: OrderStatus.PENDING, label: 'Pending', icon: 'time-outline' },
+    { value: OrderStatus.CONFIRMED, label: 'Confirmed', icon: 'checkmark-circle-outline' },
+    { value: OrderStatus.PROCESSING, label: 'Processing', icon: 'cog-outline' },
+    { value: OrderStatus.SHIPPED, label: 'Shipped', icon: 'airplane-outline' },
+    { value: OrderStatus.DELIVERED, label: 'Delivered', icon: 'checkmark-done-outline' },
+    { value: OrderStatus.CANCELLED, label: 'Cancelled', icon: 'close-circle-outline' },
+  ];
 
   useEffect(() => {
     loadOrders();
@@ -48,6 +58,7 @@ const OrderManagementScreen: React.FC = () => {
 
     try {
       setUpdatingStatus(true);
+      setStatusModalVisible(false);
       await orderService.updateStatus(selectedOrder._id, newStatus);
       Alert.alert('Success', 'Order status updated successfully');
       setDetailsModalVisible(false);
@@ -94,6 +105,11 @@ const OrderManagementScreen: React.FC = () => {
     return product.name;
   };
 
+  const getStatusLabel = (status: OrderStatus): string => {
+    const option = statusOptions.find(opt => opt.value === status);
+    return option?.label || status;
+  };
+
   const renderOrder = ({ item }: { item: Order }) => {
     const statusColors = getStatusColor(item.status);
     return (
@@ -110,7 +126,7 @@ const OrderManagementScreen: React.FC = () => {
           </View>
         </View>
         <View style={styles.orderMeta}>
-          <Text style={styles.orderAmount}>${item.totalAmount.toFixed(2)}</Text>
+          <Text style={styles.orderAmount}>₹{item.totalAmount.toFixed(2)}</Text>
           <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
         </View>
         <Text style={styles.itemCount}>
@@ -151,7 +167,7 @@ const OrderManagementScreen: React.FC = () => {
         onRequestClose={() => setDetailsModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, Platform.OS === 'web' && styles.modalContentWeb]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Order Details</Text>
               <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
@@ -174,7 +190,7 @@ const OrderManagementScreen: React.FC = () => {
                   </View>
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Total Amount:</Text>
-                    <Text style={styles.infoValue}>${selectedOrder.totalAmount.toFixed(2)}</Text>
+                    <Text style={styles.infoValue}>₹{selectedOrder.totalAmount.toFixed(2)}</Text>
                   </View>
                 </View>
 
@@ -230,10 +246,10 @@ const OrderManagementScreen: React.FC = () => {
                       </View>
                       <View style={styles.orderItemPricing}>
                         <Text style={styles.orderItemPrice}>
-                          ${item.price.toFixed(2)} each
+                          ₹{item.price.toFixed(2)} each
                         </Text>
                         <Text style={styles.orderItemSubtotal}>
-                          ${item.subtotal.toFixed(2)}
+                          ₹{item.subtotal.toFixed(2)}
                         </Text>
                       </View>
                     </View>
@@ -243,21 +259,21 @@ const OrderManagementScreen: React.FC = () => {
                 {/* Status Update */}
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Update Status</Text>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={selectedOrder.status}
-                      onValueChange={(value) => handleStatusUpdate(value as OrderStatus)}
-                      enabled={!updatingStatus}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Pending" value={OrderStatus.PENDING} />
-                      <Picker.Item label="Confirmed" value={OrderStatus.CONFIRMED} />
-                      <Picker.Item label="Processing" value={OrderStatus.PROCESSING} />
-                      <Picker.Item label="Shipped" value={OrderStatus.SHIPPED} />
-                      <Picker.Item label="Delivered" value={OrderStatus.DELIVERED} />
-                      <Picker.Item label="Cancelled" value={OrderStatus.CANCELLED} />
-                    </Picker>
-                  </View>
+                  <TouchableOpacity
+                    style={styles.statusSelector}
+                    onPress={() => setStatusModalVisible(true)}
+                    disabled={updatingStatus}
+                  >
+                    <View style={styles.statusSelectorContent}>
+                      <Text style={styles.statusSelectorLabel}>Current Status:</Text>
+                      <View style={styles.statusSelectorValue}>
+                        <Text style={styles.statusSelectorText}>
+                          {getStatusLabel(selectedOrder.status)}
+                        </Text>
+                        <Ionicons name="chevron-down" size={20} color="#666" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
                   {updatingStatus && (
                     <ActivityIndicator size="small" color="#6200ee" style={styles.statusLoader} />
                   )}
@@ -273,6 +289,55 @@ const OrderManagementScreen: React.FC = () => {
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Status Selector Modal */}
+      <Modal
+        visible={statusModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setStatusModalVisible(false)}
+      >
+        <View style={styles.statusModalOverlay}>
+          <View style={[styles.statusModalContent, Platform.OS === 'web' && styles.statusModalContentWeb]}>
+            <View style={styles.statusModalHeader}>
+              <Text style={styles.statusModalTitle}>Select Order Status</Text>
+              <TouchableOpacity onPress={() => setStatusModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.statusOptionsContainer}>
+              {statusOptions.map((option) => {
+                const colors = getStatusColor(option.value);
+                const isSelected = selectedOrder?.status === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.statusOption,
+                      isSelected && styles.statusOptionSelected,
+                    ]}
+                    onPress={() => handleStatusUpdate(option.value)}
+                  >
+                    <View style={styles.statusOptionLeft}>
+                      <Ionicons
+                        name={option.icon as any}
+                        size={24}
+                        color={colors.text}
+                      />
+                      <Text style={[styles.statusOptionText, { color: colors.text }]}>
+                        {option.label}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={24} color="#6200ee" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -373,6 +438,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: '90%',
   },
+  modalContentWeb: {
+    alignSelf: 'center',
+    width: '90%',
+    maxWidth: 600,
+    borderRadius: 20,
+    marginVertical: 'auto',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -450,13 +522,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  pickerWrapper: {
+  statusSelector: {
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    overflow: 'hidden',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  picker: {
-    height: 50,
+  statusSelectorContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusSelectorLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  statusSelectorValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusSelectorText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
   },
   statusLoader: {
     marginTop: 12,
@@ -476,6 +566,64 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  statusModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  statusModalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  statusModalContentWeb: {
+    alignSelf: 'center',
+    width: '90%',
+    maxWidth: 400,
+    borderRadius: 20,
+    marginVertical: 'auto',
+  },
+  statusModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  statusModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  statusOptionsContainer: {
+    padding: 16,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    marginBottom: 8,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  statusOptionSelected: {
+    backgroundColor: '#e1bee7',
+    borderColor: '#6200ee',
+  },
+  statusOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
   },
 });
 

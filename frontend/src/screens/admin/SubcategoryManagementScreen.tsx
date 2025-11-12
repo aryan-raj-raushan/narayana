@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Switch,
   ScrollView,
+  Platform,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ const SubcategoryManagementScreen: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
   const [formData, setFormData] = useState<CreateSubcategoryDto>({
     name: '',
@@ -189,27 +191,15 @@ const SubcategoryManagementScreen: React.FC = () => {
               />
 
               <Text style={styles.label}>Category *</Text>
-              <View style={styles.pickerContainer}>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category._id}
-                    style={[
-                      styles.pickerItem,
-                      formData.category === category._id && styles.pickerItemActive,
-                    ]}
-                    onPress={() => setFormData({ ...formData, category: category._id })}
-                  >
-                    <Text
-                      style={[
-                        styles.pickerItemText,
-                        formData.category === category._id && styles.pickerItemTextActive,
-                      ]}
-                    >
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <TouchableOpacity
+                style={styles.selectorButton}
+                onPress={() => setCategoryModalVisible(true)}
+              >
+                <Text style={formData.category ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                  {formData.category ? categories.find(c => c._id === formData.category)?.name : 'Select Category'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#666" />
+              </TouchableOpacity>
 
               <Text style={styles.label}>Description</Text>
               <TextInput
@@ -240,6 +230,39 @@ const SubcategoryManagementScreen: React.FC = () => {
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={categoryModalVisible} animationType="slide" transparent onRequestClose={() => setCategoryModalVisible(false)}>
+        <View style={styles.selectorModalOverlay}>
+          <View style={[styles.selectorModalContent, Platform.OS === 'web' && styles.selectorModalContentWeb]}>
+            <View style={styles.selectorModalHeader}>
+              <Text style={styles.selectorModalTitle}>Select Category</Text>
+              <TouchableOpacity onPress={() => setCategoryModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.selectorModalList}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category._id}
+                  style={styles.selectorModalItem}
+                  onPress={() => {
+                    setFormData({ ...formData, category: category._id });
+                    setCategoryModalVisible(false);
+                  }}
+                >
+                  <View style={styles.selectorModalItemContent}>
+                    <Ionicons name="grid-outline" size={20} color="#6200ee" />
+                    <Text style={styles.selectorModalItemText}>{category.name}</Text>
+                  </View>
+                  {formData.category === category._id && (
+                    <Ionicons name="checkmark" size={24} color="#6200ee" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -417,28 +440,73 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
-  pickerContainer: {
+  selectorButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
   },
-  pickerItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  selectorButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectorButtonPlaceholder: {
+    fontSize: 16,
+    color: '#999',
+  },
+  selectorModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  selectorModalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  selectorModalContentWeb: {
+    alignSelf: 'center',
+    width: '90%',
+    maxWidth: 400,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    marginVertical: 'auto',
   },
-  pickerItemActive: {
-    backgroundColor: '#6200ee',
+  selectorModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  pickerItemText: {
-    fontSize: 14,
-    color: '#666',
+  selectorModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
-  pickerItemTextActive: {
-    color: 'white',
-    fontWeight: '600',
+  selectorModalList: {
+    padding: 8,
+  },
+  selectorModalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+  },
+  selectorModalItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  selectorModalItemText: {
+    fontSize: 16,
+    color: '#333',
   },
   switchRow: {
     flexDirection: 'row',

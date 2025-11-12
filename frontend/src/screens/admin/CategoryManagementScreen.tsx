@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Switch,
   ScrollView,
+  Platform,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ const CategoryManagementScreen: React.FC = () => {
   const [genders, setGenders] = useState<Gender[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [genderModalVisible, setGenderModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CreateCategoryDto>({
     name: '',
@@ -184,27 +186,15 @@ const CategoryManagementScreen: React.FC = () => {
               />
 
               <Text style={styles.label}>Gender *</Text>
-              <View style={styles.pickerContainer}>
-                {genders.map((gender) => (
-                  <TouchableOpacity
-                    key={gender._id}
-                    style={[
-                      styles.pickerItem,
-                      formData.gender === gender._id && styles.pickerItemActive,
-                    ]}
-                    onPress={() => setFormData({ ...formData, gender: gender._id })}
-                  >
-                    <Text
-                      style={[
-                        styles.pickerItemText,
-                        formData.gender === gender._id && styles.pickerItemTextActive,
-                      ]}
-                    >
-                      {gender.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <TouchableOpacity
+                style={styles.selectorButton}
+                onPress={() => setGenderModalVisible(true)}
+              >
+                <Text style={formData.gender ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                  {formData.gender ? genders.find(g => g._id === formData.gender)?.name : 'Select Gender'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#666" />
+              </TouchableOpacity>
 
               <Text style={styles.label}>Description</Text>
               <TextInput
@@ -235,6 +225,39 @@ const CategoryManagementScreen: React.FC = () => {
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={genderModalVisible} animationType="slide" transparent onRequestClose={() => setGenderModalVisible(false)}>
+        <View style={styles.selectorModalOverlay}>
+          <View style={[styles.selectorModalContent, Platform.OS === 'web' && styles.selectorModalContentWeb]}>
+            <View style={styles.selectorModalHeader}>
+              <Text style={styles.selectorModalTitle}>Select Gender</Text>
+              <TouchableOpacity onPress={() => setGenderModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.selectorModalList}>
+              {genders.map((gender) => (
+                <TouchableOpacity
+                  key={gender._id}
+                  style={styles.selectorModalItem}
+                  onPress={() => {
+                    setFormData({ ...formData, gender: gender._id });
+                    setGenderModalVisible(false);
+                  }}
+                >
+                  <View style={styles.selectorModalItemContent}>
+                    <Ionicons name="transgender" size={20} color="#6200ee" />
+                    <Text style={styles.selectorModalItemText}>{gender.name}</Text>
+                  </View>
+                  {formData.gender === gender._id && (
+                    <Ionicons name="checkmark" size={24} color="#6200ee" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -412,28 +435,73 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
-  pickerContainer: {
+  selectorButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
   },
-  pickerItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  selectorButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectorButtonPlaceholder: {
+    fontSize: 16,
+    color: '#999',
+  },
+  selectorModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  selectorModalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  selectorModalContentWeb: {
+    alignSelf: 'center',
+    width: '90%',
+    maxWidth: 400,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
+    marginVertical: 'auto',
   },
-  pickerItemActive: {
-    backgroundColor: '#6200ee',
+  selectorModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
-  pickerItemText: {
-    fontSize: 14,
-    color: '#666',
+  selectorModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
-  pickerItemTextActive: {
-    color: 'white',
-    fontWeight: '600',
+  selectorModalList: {
+    padding: 8,
+  },
+  selectorModalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+  },
+  selectorModalItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  selectorModalItemText: {
+    fontSize: 16,
+    color: '#333',
   },
   switchRow: {
     flexDirection: 'row',
