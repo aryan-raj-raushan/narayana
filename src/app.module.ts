@@ -8,16 +8,18 @@ import { GenderModule } from './modules/gender/gender.module';
 import { CategoryModule } from './modules/category/category.module';
 import { SubcategoryModule } from './modules/subcategory/subcategory.module';
 import { ProductModule } from './modules/product/product.module';
+import { MediaModule } from './modules/media/media.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import emailConfig from './config/email.config';
+import imagekitConfig from './config/imagekit.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, jwtConfig, emailConfig],
+      load: [appConfig, databaseConfig, jwtConfig, emailConfig, imagekitConfig],
       envFilePath: '.env',
     }),
     DatabaseModule,
@@ -27,6 +29,7 @@ import emailConfig from './config/email.config';
     CategoryModule,
     SubcategoryModule,
     ProductModule,
+    MediaModule,
     // Other modules will be added here in future phases
   ],
   controllers: [AppController],
