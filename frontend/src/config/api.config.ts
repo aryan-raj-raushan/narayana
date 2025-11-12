@@ -1,8 +1,21 @@
 // API Configuration
+const getBaseURL = () => {
+  // Check if we have an explicit environment variable
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // Check if we're in development
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    return 'http://localhost:3000';
+  }
+
+  // Production fallback
+  return 'https://narayana-il06bypxy-saurabhs-projects-2660e0f6.vercel.app';
+};
+
 export const API_CONFIG = {
-  BASE_URL: __DEV__
-    ? 'http://localhost:3000' // Development
-    : 'https://your-production-api.com', // Production
+  BASE_URL: getBaseURL(),
   API_PREFIX: '/api',
   TIMEOUT: 30000,
 };
