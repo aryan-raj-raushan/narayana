@@ -4,6 +4,9 @@ import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { GenderModule } from './modules/gender/gender.module';
+import { CategoryModule } from './modules/category/category.module';
+import { SubcategoryModule } from './modules/subcategory/subcategory.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -19,6 +22,9 @@ import emailConfig from './config/email.config';
     DatabaseModule,
     AdminModule,
     AuthModule,
+    GenderModule,
+    CategoryModule,
+    SubcategoryModule,
     // Other modules will be added here in future phases
   ],
   controllers: [AppController],
