@@ -148,13 +148,32 @@ export interface CartItem {
   product: Product;
   quantity: number;
   price: number;
-  subtotal: number;
+  itemSubtotal: number;
+  productDiscount: number;
+  offerDiscount: number;
+  itemTotal: number;
+  appliedOffer?: {
+    _id: string;
+    name: string;
+    description?: string;
+    offerType: OfferType;
+  } | null;
+  subtotal?: number; // Deprecated - use itemTotal
 }
 
 export interface Cart {
   items: CartItem[];
-  totalItems: number;
-  totalPrice: number;
+  summary: {
+    subtotal: number;
+    totalProductDiscount: number;
+    totalOfferDiscount: number;
+    totalDiscount: number;
+    total: number;
+    totalItems: number;
+    itemCount: number;
+  };
+  totalItems?: number; // Deprecated - use summary.totalItems
+  totalPrice?: number; // Deprecated - use summary.total
 }
 
 export interface AddToCartDto {
