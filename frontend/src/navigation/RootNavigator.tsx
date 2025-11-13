@@ -66,13 +66,17 @@ const RootNavigator: React.FC = () => {
       if (Platform.OS === 'web') {
         const path = window.location.pathname;
 
-        // If on admin route, check authentication
-        if ((path.startsWith('/admin') || path === '/adminLogin') && path !== '/admin/login' && path !== '/adminLogin') {
+        // If on admin route or adminLogin, attempt to restore auth state
+        if (path.startsWith('/admin') || path === '/adminLogin') {
           try {
+            // Try to restore auth from stored token
             await dispatch(checkAuth()).unwrap();
           } catch (error) {
-            // If auth check fails, redirect to login
-            window.location.href = '/adminLogin';
+            console.error('Auth check failed:', error);
+            // If auth check fails and not on login page, redirect to login
+            if (path !== '/adminLogin' && path !== '/admin/login') {
+              window.location.href = '/adminLogin';
+            }
           }
         }
       }
@@ -81,6 +85,16 @@ const RootNavigator: React.FC = () => {
 
     checkAuthStatus();
   }, [dispatch]);
+
+  // Redirect to dashboard after successful login
+  useEffect(() => {
+    if (Platform.OS === 'web' && isAuthenticated && !isCheckingAuth) {
+      const path = window.location.pathname;
+      if (path === '/adminLogin' || path === '/admin/login') {
+        window.location.href = '/admin/dashboard';
+      }
+    }
+  }, [isAuthenticated, isCheckingAuth]);
 
   // Check if we're on admin route (for web)
   const isAdminRoute = Platform.OS === 'web'
