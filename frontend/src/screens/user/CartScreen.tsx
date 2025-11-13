@@ -96,7 +96,13 @@ const CartScreen: React.FC = () => {
         <Text style={styles.productName} numberOfLines={2}>
           {item.product.name}
         </Text>
-        <Text style={styles.productPrice}>₹{item.price}</Text>
+        <Text style={styles.productPrice}>₹{item.price} × {item.quantity}</Text>
+        {item.appliedOffer && (
+          <View style={styles.offerAppliedBadge}>
+            <Ionicons name="pricetag" size={12} color="#4caf50" />
+            <Text style={styles.offerAppliedText}>{item.appliedOffer.name}</Text>
+          </View>
+        )}
         <View style={styles.quantityContainer}>
           <TouchableOpacity
             style={styles.quantityButton}
@@ -120,7 +126,12 @@ const CartScreen: React.FC = () => {
         </View>
       </View>
       <View style={styles.itemActions}>
-        <Text style={styles.subtotal}>₹{item.subtotal}</Text>
+        <Text style={styles.subtotal}>₹{item.itemTotal}</Text>
+        {(item.offerDiscount > 0 || item.productDiscount > 0) && (
+          <Text style={styles.discountText}>
+            - ₹{(item.offerDiscount + item.productDiscount).toFixed(2)}
+          </Text>
+        )}
         <TouchableOpacity
           style={styles.removeButton}
           onPress={() => handleRemoveItem(item._id)}
@@ -155,11 +166,14 @@ const CartScreen: React.FC = () => {
     );
   }
 
+  const totalItems = cart.summary?.totalItems || cart.totalItems || 0;
+  const total = cart.summary?.total || cart.totalPrice || 0;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          Cart ({cart.totalItems} {cart.totalItems === 1 ? 'item' : 'items'})
+          Cart ({totalItems} {totalItems === 1 ? 'item' : 'items'})
         </Text>
         {cart.items.length > 0 && (
           <TouchableOpacity onPress={handleClearCart}>
@@ -176,9 +190,34 @@ const CartScreen: React.FC = () => {
       />
 
       <View style={styles.footer}>
+        {cart.summary && (
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Subtotal:</Text>
+              <Text style={styles.summaryValue}>₹{cart.summary.subtotal.toFixed(2)}</Text>
+            </View>
+            {cart.summary.totalProductDiscount > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, styles.discountLabel]}>Product Discounts:</Text>
+                <Text style={[styles.summaryValue, styles.discountValue]}>
+                  - ₹{cart.summary.totalProductDiscount.toFixed(2)}
+                </Text>
+              </View>
+            )}
+            {cart.summary.totalOfferDiscount > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, styles.offerLabel]}>Offer Savings:</Text>
+                <Text style={[styles.summaryValue, styles.offerValue]}>
+                  - ₹{cart.summary.totalOfferDiscount.toFixed(2)}
+                </Text>
+              </View>
+            )}
+            <View style={[styles.summaryRow, styles.divider]} />
+          </View>
+        )}
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total:</Text>
-          <Text style={styles.totalAmount}>₹{cart.totalPrice}</Text>
+          <Text style={styles.totalAmount}>₹{total.toFixed(2)}</Text>
         </View>
         <TouchableOpacity
           style={styles.checkoutButton}
@@ -292,7 +331,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6200ee',
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  offerAppliedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
     marginBottom: 8,
+    gap: 4,
+  },
+  offerAppliedText: {
+    color: '#4caf50',
+    fontSize: 11,
+    fontWeight: '600',
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -320,6 +375,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  discountText: {
+    fontSize: 12,
+    color: '#4caf50',
+    fontWeight: '600',
+    marginTop: 4,
+  },
   removeButton: {
     padding: 8,
   },
@@ -328,6 +389,43 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
+  },
+  summaryContainer: {
+    marginBottom: 12,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  summaryValue: {
+    fontSize: 14,
+    color: '#333',
+  },
+  discountLabel: {
+    color: '#666',
+  },
+  discountValue: {
+    color: '#f57c00',
+    fontWeight: '600',
+  },
+  offerLabel: {
+    color: '#666',
+  },
+  offerValue: {
+    color: '#4caf50',
+    fontWeight: '600',
+  },
+  divider: {
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingTop: 12,
+    marginTop: 4,
   },
   totalContainer: {
     flexDirection: 'row',

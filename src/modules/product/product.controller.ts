@@ -67,6 +67,12 @@ export class ProductController {
     return this.productService.autosuggest(query, limitNum);
   }
 
+  @Get('featured')
+  async getFeaturedProducts(@Query('limit') limit: string = '12') {
+    const limitNum = parseInt(limit, 10);
+    return this.productService.getFeaturedProducts(limitNum);
+  }
+
   @Get('by-category/:categoryId')
   async getProductsByCategory(@Param('categoryId') categoryId: string) {
     return this.productService.getProductsByCategory(categoryId);
