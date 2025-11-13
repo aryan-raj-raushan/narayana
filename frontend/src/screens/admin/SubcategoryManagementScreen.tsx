@@ -27,8 +27,8 @@ const SubcategoryManagementScreen: React.FC = () => {
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
   const [formData, setFormData] = useState<CreateSubcategoryDto>({
     name: '',
-    description: '',
-    category: '',
+    slug: '',
+    categoryId: '',
     isActive: true,
   });
 
@@ -57,13 +57,13 @@ const SubcategoryManagementScreen: React.FC = () => {
       setEditingSubcategory(subcategory);
       setFormData({
         name: subcategory.name,
-        description: subcategory.description || '',
-        category: typeof subcategory.category === 'string' ? subcategory.category : subcategory.category._id,
+        slug: subcategory.slug || '',
+        categoryId: subcategory.categoryId,
         isActive: subcategory.isActive,
       });
     } else {
       setEditingSubcategory(null);
-      setFormData({ name: '', description: '', category: '', isActive: true });
+      setFormData({ name: '', slug: '', categoryId: '', isActive: true });
     }
     setModalVisible(true);
   };
@@ -73,7 +73,7 @@ const SubcategoryManagementScreen: React.FC = () => {
       Alert.alert('Error', 'Please enter a name');
       return;
     }
-    if (!formData.category) {
+    if (!formData.categoryId) {
       Alert.alert('Error', 'Please select a category');
       return;
     }
@@ -89,6 +89,7 @@ const SubcategoryManagementScreen: React.FC = () => {
       setModalVisible(false);
       loadData();
     } catch (error: any) {
+      console.error('Subcategory form submit error:', error);
       Alert.alert('Error', error.response?.data?.message || 'Operation failed');
     }
   };
@@ -105,16 +106,12 @@ const SubcategoryManagementScreen: React.FC = () => {
             Alert.alert('Success', 'Subcategory deleted successfully');
             loadData();
           } catch (error: any) {
+            console.error('Delete subcategory error:', error);
             Alert.alert('Error', error.response?.data?.message || 'Failed to delete subcategory');
           }
         },
       },
     ]);
-  };
-
-  const getCategoryName = (category: Category | string): string => {
-    if (typeof category === 'string') return 'Unknown';
-    return category.name;
   };
 
   const renderSubcategory = ({ item }: { item: Subcategory }) => (
@@ -128,9 +125,9 @@ const SubcategoryManagementScreen: React.FC = () => {
         </View>
       </View>
       <Text style={styles.itemMeta}>
-        Category: {getCategoryName(item.category)}
+        Category: {categories.find(c => c._id === item.categoryId)?.name || item.categoryId}
       </Text>
-      {item.description && <Text style={styles.itemDescription}>{item.description}</Text>}
+      {item.slug && <Text style={styles.itemDescription}>Slug: {item.slug}</Text>}
       <View style={styles.itemActions}>
         <TouchableOpacity style={styles.editButton} onPress={() => openModal(item)}>
           <Ionicons name="create-outline" size={20} color="#2196f3" />
@@ -195,20 +192,18 @@ const SubcategoryManagementScreen: React.FC = () => {
                 style={styles.selectorButton}
                 onPress={() => setCategoryModalVisible(true)}
               >
-                <Text style={formData.category ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
-                  {formData.category ? categories.find(c => c._id === formData.category)?.name : 'Select Category'}
+                <Text style={formData.categoryId ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                  {formData.categoryId ? categories.find(c => c._id === formData.categoryId)?.name : 'Select Category'}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#666" />
               </TouchableOpacity>
 
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>Slug (optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.description}
-                onChangeText={(value) => setFormData({ ...formData, description: value })}
-                placeholder="Enter description"
-                multiline
-                numberOfLines={3}
+                style={styles.input}
+                value={formData.slug}
+                onChangeText={(value) => setFormData({ ...formData, slug: value })}
+                placeholder="Enter slug (auto-generated if empty)"
               />
 
               <View style={styles.switchRow}>
@@ -249,7 +244,7 @@ const SubcategoryManagementScreen: React.FC = () => {
                   key={category._id}
                   style={styles.selectorModalItem}
                   onPress={() => {
-                    setFormData({ ...formData, category: category._id });
+                    setFormData({ ...formData, categoryId: category._id });
                     setCategoryModalVisible(false);
                   }}
                 >
@@ -257,7 +252,7 @@ const SubcategoryManagementScreen: React.FC = () => {
                     <Ionicons name="grid-outline" size={20} color="#6200ee" />
                     <Text style={styles.selectorModalItemText}>{category.name}</Text>
                   </View>
-                  {formData.category === category._id && (
+                  {formData.categoryId === category._id && (
                     <Ionicons name="checkmark" size={24} color="#6200ee" />
                   )}
                 </TouchableOpacity>

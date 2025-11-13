@@ -27,8 +27,8 @@ const CategoryManagementScreen: React.FC = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState<CreateCategoryDto>({
     name: '',
-    description: '',
-    gender: '',
+    slug: '',
+    genderId: '',
     isActive: true,
   });
 
@@ -57,13 +57,13 @@ const CategoryManagementScreen: React.FC = () => {
       setEditingCategory(category);
       setFormData({
         name: category.name,
-        description: category.description || '',
-        gender: typeof category.gender === 'string' ? category.gender : category.gender._id,
+        slug: category.slug || '',
+        genderId: category.genderId,
         isActive: category.isActive,
       });
     } else {
       setEditingCategory(null);
-      setFormData({ name: '', description: '', gender: '', isActive: true });
+      setFormData({ name: '', slug: '', genderId: '', isActive: true });
     }
     setModalVisible(true);
   };
@@ -73,7 +73,7 @@ const CategoryManagementScreen: React.FC = () => {
       Alert.alert('Error', 'Please enter a name');
       return;
     }
-    if (!formData.gender) {
+    if (!formData.genderId) {
       Alert.alert('Error', 'Please select a gender');
       return;
     }
@@ -89,6 +89,7 @@ const CategoryManagementScreen: React.FC = () => {
       setModalVisible(false);
       loadData();
     } catch (error: any) {
+      console.error('Category form submit error:', error);
       Alert.alert('Error', error.response?.data?.message || 'Operation failed');
     }
   };
@@ -105,6 +106,7 @@ const CategoryManagementScreen: React.FC = () => {
             Alert.alert('Success', 'Category deleted successfully');
             loadData();
           } catch (error: any) {
+            console.error('Delete category error:', error);
             Alert.alert('Error', error.response?.data?.message || 'Failed to delete category');
           }
         },
@@ -123,9 +125,9 @@ const CategoryManagementScreen: React.FC = () => {
         </View>
       </View>
       <Text style={styles.itemMeta}>
-        Gender: {typeof item.gender === 'string' ? item.gender : item.gender.name}
+        Gender: {genders.find(g => g._id === item.genderId)?.name || item.genderId}
       </Text>
-      {item.description && <Text style={styles.itemDescription}>{item.description}</Text>}
+      {item.slug && <Text style={styles.itemDescription}>Slug: {item.slug}</Text>}
       <View style={styles.itemActions}>
         <TouchableOpacity style={styles.editButton} onPress={() => openModal(item)}>
           <Ionicons name="create-outline" size={20} color="#2196f3" />
@@ -190,20 +192,18 @@ const CategoryManagementScreen: React.FC = () => {
                 style={styles.selectorButton}
                 onPress={() => setGenderModalVisible(true)}
               >
-                <Text style={formData.gender ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
-                  {formData.gender ? genders.find(g => g._id === formData.gender)?.name : 'Select Gender'}
+                <Text style={formData.genderId ? styles.selectorButtonText : styles.selectorButtonPlaceholder}>
+                  {formData.genderId ? genders.find(g => g._id === formData.genderId)?.name : 'Select Gender'}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#666" />
               </TouchableOpacity>
 
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>Slug (optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.description}
-                onChangeText={(value) => setFormData({ ...formData, description: value })}
-                placeholder="Enter description"
-                multiline
-                numberOfLines={3}
+                style={styles.input}
+                value={formData.slug}
+                onChangeText={(value) => setFormData({ ...formData, slug: value })}
+                placeholder="Enter slug (auto-generated if empty)"
               />
 
               <View style={styles.switchRow}>
@@ -244,7 +244,7 @@ const CategoryManagementScreen: React.FC = () => {
                   key={gender._id}
                   style={styles.selectorModalItem}
                   onPress={() => {
-                    setFormData({ ...formData, gender: gender._id });
+                    setFormData({ ...formData, genderId: gender._id });
                     setGenderModalVisible(false);
                   }}
                 >
@@ -252,7 +252,7 @@ const CategoryManagementScreen: React.FC = () => {
                     <Ionicons name="transgender" size={20} color="#6200ee" />
                     <Text style={styles.selectorModalItemText}>{gender.name}</Text>
                   </View>
-                  {formData.gender === gender._id && (
+                  {formData.genderId === gender._id && (
                     <Ionicons name="checkmark" size={24} color="#6200ee" />
                   )}
                 </TouchableOpacity>
