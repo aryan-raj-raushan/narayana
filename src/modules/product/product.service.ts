@@ -367,4 +367,18 @@ export class ProductService {
       })),
     };
   }
+
+  async getFeaturedProducts(limit: number = 12): Promise<Product[]> {
+    return this.productModel
+      .find({
+        isActive: true,
+        stock: { $gt: 0 },
+      })
+      .populate('genderId', 'name slug')
+      .populate('categoryId', 'name slug')
+      .populate('subcategoryId', 'name slug')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
+  }
 }
