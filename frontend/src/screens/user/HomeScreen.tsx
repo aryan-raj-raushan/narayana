@@ -20,7 +20,8 @@ import { fetchCart } from '../../store/slices/cartSlice';
 import { fetchWishlist } from '../../store/slices/wishlistSlice';
 import genderService from '../../services/gender.service';
 import categoryService from '../../services/category.service';
-import { Gender, Category } from '../../types';
+import offerService from '../../services/offer.service';
+import { Gender, Category, Offer } from '../../types';
 import SearchAutosuggest from '../../components/SearchAutosuggest';
 
 const { width } = Dimensions.get('window');
@@ -33,6 +34,7 @@ const HomeScreen: React.FC = () => {
   const { featuredProducts, loading } = useAppSelector((state) => state.product);
   const [genders, setGenders] = useState<Gender[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [activeOffers, setActiveOffers] = useState<Offer[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -44,12 +46,14 @@ const HomeScreen: React.FC = () => {
       dispatch(fetchFeaturedProducts());
       dispatch(fetchCart());
       dispatch(fetchWishlist());
-      const [gendersData, categoriesData] = await Promise.all([
+      const [gendersData, categoriesData, offersData] = await Promise.all([
         genderService.getAll(),
         categoryService.getAll(),
+        offerService.getActive(),
       ]);
       setGenders(gendersData.filter((g) => g.isActive));
       setCategories(categoriesData.filter((c) => c.isActive));
+      setActiveOffers(offersData.filter((o) => offerService.isOfferValid(o)));
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -99,8 +103,43 @@ const HomeScreen: React.FC = () => {
         />
       </View>
 
+      {activeOffers.length > 0 && (
+        <View style={styles.offersSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🎉 Active Offers</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.offersScroll}>
+            {activeOffers.map((offer) => (
+              <TouchableOpacity
+                key={offer._id}
+                style={[
+                  styles.offerBanner,
+                  { backgroundColor: offerService.getOfferBadgeColor(offer.offerType) },
+                ]}
+                onPress={() => navigation.navigate('ProductList', {})}
+              >
+                <View style={styles.offerBannerContent}>
+                  <Ionicons name="pricetag" size={24} color="white" style={styles.offerIcon} />
+                  <View style={styles.offerTextContainer}>
+                    <Text style={styles.offerBannerTitle}>{offer.name}</Text>
+                    <Text style={styles.offerBannerSubtitle}>
+                      {offerService.formatOfferDescription(offer)}
+                    </Text>
+                    {offer.description && (
+                      <Text style={styles.offerBannerDescription} numberOfLines={2}>
+                        {offer.description}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Shoppp by Gender</Text>
+        <Text style={styles.sectionTitle}>Shop by Gender</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
           {genders.map((gender) => (
             <TouchableOpacity
@@ -248,6 +287,50 @@ const styles = StyleSheet.create({
   },
   searchWrapper: {
     marginBottom: 8,
+  },
+  offersSection: {
+    paddingVertical: 16,
+  },
+  offersScroll: {
+    paddingHorizontal: 16,
+  },
+  offerBanner: {
+    width: 280,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  offerBannerContent: {
+    flexDirection: 'row',
+    padding: 16,
+    alignItems: 'center',
+  },
+  offerIcon: {
+    marginRight: 12,
+  },
+  offerTextContainer: {
+    flex: 1,
+  },
+  offerBannerTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  offerBannerSubtitle: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  offerBannerDescription: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
   },
   section: {
     paddingHorizontal: 16,
