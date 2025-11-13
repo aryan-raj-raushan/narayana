@@ -11,7 +11,8 @@ const getBaseURL = () => {
   }
 
   // Production fallback
-  return 'https://narayana-mszm.onrender.com';
+  // return 'https://narayana-mszm.onrender.com';
+    return ' https://naryana-gpfm9.ondigitalocean.app';  
 };
 
 export const API_CONFIG = {
