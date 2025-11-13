@@ -163,24 +163,40 @@ const ProductManagementScreen: React.FC = () => {
   };
 
   const handleDelete = (product: Product) => {
-    Alert.alert('Delete Product', `Are you sure you want to delete "${product.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            console.log('Deleting product:', product._id);
-            await productService.delete(product._id);
-            Alert.alert('Success', 'Product deleted successfully');
-            loadData();
-          } catch (error: any) {
-            console.error('Delete product error:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to delete product');
-          }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+        deleteProduct(product._id);
+      }
+    } else {
+      Alert.alert('Delete Product', `Are you sure you want to delete "${product.name}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteProduct(product._id),
         },
-      },
-    ]);
+      ]);
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      console.log('Deleting product:', id);
+      await productService.delete(id);
+      if (Platform.OS === 'web') {
+        alert('Product deleted successfully');
+      } else {
+        Alert.alert('Success', 'Product deleted successfully');
+      }
+      loadData();
+    } catch (error: any) {
+      console.error('Delete product error:', error);
+      if (Platform.OS === 'web') {
+        alert(error.response?.data?.message || 'Failed to delete product');
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to delete product');
+      }
+    }
   };
 
   const addSize = () => {

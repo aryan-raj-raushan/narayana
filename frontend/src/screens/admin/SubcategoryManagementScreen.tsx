@@ -98,23 +98,40 @@ const SubcategoryManagementScreen: React.FC = () => {
   };
 
   const handleDelete = (subcategory: Subcategory) => {
-    Alert.alert('Delete Subcategory', `Are you sure you want to delete "${subcategory.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await subcategoryService.delete(subcategory._id);
-            Alert.alert('Success', 'Subcategory deleted successfully');
-            loadData();
-          } catch (error: any) {
-            console.error('Delete subcategory error:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to delete subcategory');
-          }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${subcategory.name}"?`)) {
+        deleteSubcategory(subcategory._id);
+      }
+    } else {
+      Alert.alert('Delete Subcategory', `Are you sure you want to delete "${subcategory.name}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteSubcategory(subcategory._id),
         },
-      },
-    ]);
+      ]);
+    }
+  };
+
+  const deleteSubcategory = async (id: string) => {
+    try {
+      console.log('Deleting subcategory:', id);
+      await subcategoryService.delete(id);
+      if (Platform.OS === 'web') {
+        alert('Subcategory deleted successfully');
+      } else {
+        Alert.alert('Success', 'Subcategory deleted successfully');
+      }
+      loadData();
+    } catch (error: any) {
+      console.error('Delete subcategory error:', error);
+      if (Platform.OS === 'web') {
+        alert(error.response?.data?.message || 'Failed to delete subcategory');
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to delete subcategory');
+      }
+    }
   };
 
   const getCategoryName = (categoryId: string | Category): string => {

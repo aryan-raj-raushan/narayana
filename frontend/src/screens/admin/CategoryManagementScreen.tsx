@@ -98,23 +98,40 @@ const CategoryManagementScreen: React.FC = () => {
   };
 
   const handleDelete = (category: Category) => {
-    Alert.alert('Delete Category', `Are you sure you want to delete "${category.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await categoryService.delete(category._id);
-            Alert.alert('Success', 'Category deleted successfully');
-            loadData();
-          } catch (error: any) {
-            console.error('Delete category error:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to delete category');
-          }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${category.name}"?`)) {
+        deleteCategory(category._id);
+      }
+    } else {
+      Alert.alert('Delete Category', `Are you sure you want to delete "${category.name}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteCategory(category._id),
         },
-      },
-    ]);
+      ]);
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      console.log('Deleting category:', id);
+      await categoryService.delete(id);
+      if (Platform.OS === 'web') {
+        alert('Category deleted successfully');
+      } else {
+        Alert.alert('Success', 'Category deleted successfully');
+      }
+      loadData();
+    } catch (error: any) {
+      console.error('Delete category error:', error);
+      if (Platform.OS === 'web') {
+        alert(error.response?.data?.message || 'Failed to delete category');
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to delete category');
+      }
+    }
   };
 
   const getGenderName = (genderId: string | Gender): string => {

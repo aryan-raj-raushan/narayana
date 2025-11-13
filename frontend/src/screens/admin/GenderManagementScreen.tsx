@@ -79,24 +79,40 @@ const GenderManagementScreen: React.FC = () => {
   };
 
   const handleDelete = (gender: Gender) => {
-    Alert.alert('Delete Gender', `Are you sure you want to delete "${gender.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            console.log('Deleting gender:', gender._id);
-            await genderService.delete(gender._id);
-            Alert.alert('Success', 'Gender deleted successfully');
-            loadGenders();
-          } catch (error: any) {
-            console.error('Delete gender error:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to delete gender');
-          }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete "${gender.name}"?`)) {
+        deleteGender(gender._id);
+      }
+    } else {
+      Alert.alert('Delete Gender', `Are you sure you want to delete "${gender.name}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteGender(gender._id),
         },
-      },
-    ]);
+      ]);
+    }
+  };
+
+  const deleteGender = async (id: string) => {
+    try {
+      console.log('Deleting gender:', id);
+      await genderService.delete(id);
+      if (Platform.OS === 'web') {
+        alert('Gender deleted successfully');
+      } else {
+        Alert.alert('Success', 'Gender deleted successfully');
+      }
+      loadGenders();
+    } catch (error: any) {
+      console.error('Delete gender error:', error);
+      if (Platform.OS === 'web') {
+        alert(error.response?.data?.message || 'Failed to delete gender');
+      } else {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to delete gender');
+      }
+    }
   };
 
   const renderGender = ({ item }: { item: Gender }) => (
