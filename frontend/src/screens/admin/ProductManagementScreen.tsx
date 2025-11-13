@@ -33,6 +33,8 @@ const ProductManagementScreen: React.FC = () => {
   const [subcategoryModalVisible, setSubcategoryModalVisible] = useState(false);
   const [relatedProductsModalVisible, setRelatedProductsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [notification, setNotification] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
     visible: false,
     message: '',
@@ -176,9 +178,8 @@ const ProductManagementScreen: React.FC = () => {
 
   const handleDelete = (product: Product) => {
     if (Platform.OS === 'web') {
-      if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-        deleteProduct(product._id);
-      }
+      setDeleteTarget(product);
+      setConfirmDeleteVisible(true);
     } else {
       Alert.alert('Delete Product', `Are you sure you want to delete "${product.name}"?`, [
         { text: 'Cancel', style: 'cancel' },
@@ -188,6 +189,14 @@ const ProductManagementScreen: React.FC = () => {
           onPress: () => deleteProduct(product._id),
         },
       ]);
+    }
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteProduct(deleteTarget._id);
+      setConfirmDeleteVisible(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -734,6 +743,35 @@ const ProductManagementScreen: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <Modal visible={confirmDeleteVisible} transparent animationType="fade">
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmHeader}>
+              <Ionicons name="warning" size={32} color="#f44336" />
+            </View>
+            <Text style={styles.confirmTitle}>Delete Product</Text>
+            <Text style={styles.confirmMessage}>
+              Are you sure you want to delete "{deleteTarget?.name}"?
+            </Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={styles.confirmCancelButton}
+                onPress={() => {
+                  setConfirmDeleteVisible(false);
+                  setDeleteTarget(null);
+                }}
+              >
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmDeleteButton} onPress={confirmDelete}>
+                <Text style={styles.confirmDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Notification Modal */}
       <Modal visible={notification.visible} transparent animationType="fade">
         <View style={styles.notificationOverlay}>
@@ -1093,6 +1131,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmCard: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  confirmHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  confirmTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  confirmMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+  },
+  confirmCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f44336',
+    alignItems: 'center',
+  },
+  confirmDeleteText: {
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
