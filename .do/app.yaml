@@ -27,5 +27,3 @@ static_sites:
   error_document: index.html
   index_document: index.html
   catchall_document: index.html
-  routes:
-  - path: /
