@@ -9,7 +9,7 @@ import CartScreen from '../screens/user/CartScreen';
 import WishlistScreen from '../screens/user/WishlistScreen';
 import CheckoutScreen from '../screens/user/CheckoutScreen';
 import OrderSuccessScreen from '../screens/user/OrderSuccessScreen';
-import UserLoginScreen from '../screens/user/UserLoginScreen';
+import LoginScreen from '../screens/common/LoginScreen';
 import UserRegisterScreen from '../screens/user/UserRegisterScreen';
 import UserProfileScreen from '../screens/user/UserProfileScreen';
 import AddAddressScreen from '../screens/user/AddAddressScreen';
@@ -112,7 +112,7 @@ const UserNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="UserLogin"
-        component={UserLoginScreen}
+        component={LoginScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
