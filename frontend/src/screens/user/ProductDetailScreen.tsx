@@ -54,7 +54,7 @@ const ProductDetailScreen: React.FC = () => {
   };
 
   const isInWishlist = () => {
-    if (!product || !wishlist) return false;
+    if (!product || !wishlist || !wishlist.items) return false;
     return wishlist.items.some((item) => item.product._id === product._id);
   };
 
@@ -205,10 +205,12 @@ const ProductDetailScreen: React.FC = () => {
         </View>
 
         {/* Description */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{product.description}</Text>
-        </View>
+        {product.description && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.description}>{product.description}</Text>
+          </View>
+        )}
 
         {/* Product Details */}
         <View style={styles.section}>
@@ -226,13 +228,13 @@ const ProductDetailScreen: React.FC = () => {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Gender:</Text>
             <Text style={styles.detailValue}>
-              {typeof product.gender === 'string' ? product.gender : product.gender.name}
+              {typeof product.genderId === 'string' ? product.genderId : product.genderId.name}
             </Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Category:</Text>
             <Text style={styles.detailValue}>
-              {typeof product.category === 'string' ? product.category : product.category.name}
+              {typeof product.categoryId === 'string' ? product.categoryId : product.categoryId.name}
             </Text>
           </View>
         </View>

@@ -15,14 +15,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import offerService from '../../services/offer.service';
-import { Offer, CreateOfferDto, OfferType, OfferRule } from '../../types';
+import productService from '../../services/product.service';
+import { Offer, CreateOfferDto, OfferType, OfferRule, Product } from '../../types';
 
 const OfferManagementScreen: React.FC = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [offerTypeModalVisible, setOfferTypeModalVisible] = useState(false);
+  const [productModalVisible, setProductModalVisible] = useState(false);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [formData, setFormData] = useState<CreateOfferDto>({
     name: '',
     description: '',
@@ -30,11 +34,22 @@ const OfferManagementScreen: React.FC = () => {
     rule: {},
     isActive: true,
     priority: 1,
+    applicableProducts: [],
   });
 
   useEffect(() => {
     loadOffers();
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    try {
+      const response = await productService.getAll({ page: 1, limit: 1000 });
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
 
   const loadOffers = async () => {
     try {
@@ -51,6 +66,7 @@ const OfferManagementScreen: React.FC = () => {
   const openModal = (offer?: Offer) => {
     if (offer) {
       setEditingOffer(offer);
+      setSelectedProductIds(offer.applicableProducts || []);
       setFormData({
         name: offer.name,
         description: offer.description,
@@ -59,9 +75,13 @@ const OfferManagementScreen: React.FC = () => {
         usageLimit: offer.usageLimit,
         priority: offer.priority,
         isActive: offer.isActive,
+        applicableProducts: offer.applicableProducts || [],
+        startDate: offer.startDate,
+        endDate: offer.endDate,
       });
     } else {
       setEditingOffer(null);
+      setSelectedProductIds([]);
       setFormData({
         name: '',
         description: '',
@@ -69,6 +89,7 @@ const OfferManagementScreen: React.FC = () => {
         rule: {},
         isActive: true,
         priority: 1,
+        applicableProducts: [],
       });
     }
     setModalVisible(true);
@@ -84,11 +105,16 @@ const OfferManagementScreen: React.FC = () => {
     }
 
     try {
+      const dataToSubmit = {
+        ...formData,
+        applicableProducts: selectedProductIds.length > 0 ? selectedProductIds : undefined,
+      };
+
       if (editingOffer) {
-        await offerService.update(editingOffer._id, formData);
+        await offerService.update(editingOffer._id, dataToSubmit);
         Alert.alert('Success', 'Offer updated successfully');
       } else {
-        await offerService.create(formData);
+        await offerService.create(dataToSubmit);
         Alert.alert('Success', 'Offer created successfully');
       }
       setModalVisible(false);
@@ -96,6 +122,21 @@ const OfferManagementScreen: React.FC = () => {
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Operation failed');
     }
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const getSelectedProductNames = () => {
+    if (selectedProductIds.length === 0) return 'All Products';
+    if (selectedProductIds.length === 1) {
+      const product = products.find((p) => p._id === selectedProductIds[0]);
+      return product ? product.name : '1 product selected';
+    }
+    return `${selectedProductIds.length} products selected`;
   };
 
   const validateRules = (): boolean => {
@@ -410,6 +451,33 @@ const OfferManagementScreen: React.FC = () => {
                 keyboardType="number-pad"
               />
 
+              <Text style={styles.label}>Applicable Products</Text>
+              <TouchableOpacity
+                style={styles.selectorButton}
+                onPress={() => setProductModalVisible(true)}
+              >
+                <Text style={styles.selectorButtonText}>
+                  {getSelectedProductNames()}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#666" />
+              </TouchableOpacity>
+
+              <Text style={styles.label}>Start Date (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.startDate || ''}
+                onChangeText={(value) => setFormData({ ...formData, startDate: value })}
+                placeholder="YYYY-MM-DD"
+              />
+
+              <Text style={styles.label}>End Date (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.endDate || ''}
+                onChangeText={(value) => setFormData({ ...formData, endDate: value })}
+                placeholder="YYYY-MM-DD"
+              />
+
               <View style={styles.switchRow}>
                 <Text style={styles.label}>Active</Text>
                 <Switch
@@ -467,6 +535,55 @@ const OfferManagementScreen: React.FC = () => {
                 );
               })}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={productModalVisible} animationType="slide" transparent onRequestClose={() => setProductModalVisible(false)}>
+        <View style={styles.selectorModalOverlay}>
+          <View style={[styles.selectorModalContent, Platform.OS === 'web' && styles.selectorModalContentWeb]}>
+            <View style={styles.selectorModalHeader}>
+              <Text style={styles.selectorModalTitle}>Select Products</Text>
+              <TouchableOpacity onPress={() => setProductModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.productModalActions}>
+              <TouchableOpacity
+                style={styles.selectAllButton}
+                onPress={() => setSelectedProductIds(products.map((p) => p._id))}
+              >
+                <Text style={styles.selectAllText}>Select All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.clearAllButton}
+                onPress={() => setSelectedProductIds([])}
+              >
+                <Text style={styles.clearAllText}>Clear All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.selectorModalList}>
+              {products.map((product) => (
+                <TouchableOpacity
+                  key={product._id}
+                  style={styles.selectorModalItem}
+                  onPress={() => toggleProductSelection(product._id)}
+                >
+                  <View style={styles.selectorModalItemContent}>
+                    <Text style={styles.selectorModalItemText}>{product.name}</Text>
+                    <Text style={styles.productSKU}>{product.sku}</Text>
+                  </View>
+                  {selectedProductIds.includes(product._id) && (
+                    <Ionicons name="checkmark-circle" size={24} color="#6200ee" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.saveButton} onPress={() => setProductModalVisible(false)}>
+                <Text style={styles.saveButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -765,6 +882,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  productModalActions: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  selectAllButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    backgroundColor: '#e3f2fd',
+    alignItems: 'center',
+  },
+  selectAllText: {
+    color: '#2196f3',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  clearAllButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    backgroundColor: '#ffebee',
+    alignItems: 'center',
+  },
+  clearAllText: {
+    color: '#f44336',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  productSKU: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
 });
 
