@@ -14,20 +14,59 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+@ApiTags('Media')
 @Controller('media')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
-  /**
-   * Upload a single file
-   */
   @Post('upload')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Upload a single file',
+    description: 'Uploads a single image or video file to the media storage',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'File to upload (jpg, png, gif, webp, mp4, mpeg, mov)',
+        },
+      },
+    },
+  })
+  @ApiQuery({ name: 'folder', required: false, description: 'Target folder for the file', example: 'products' })
+  @ApiResponse({
+    status: 201,
+    description: 'File uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid file type or no file provided',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
@@ -70,11 +109,41 @@ export class MediaController {
     return this.mediaService.uploadFile(file, folder || 'products');
   }
 
-  /**
-   * Upload multiple files
-   */
   @Post('upload-multiple')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Upload multiple files',
+    description: 'Uploads multiple image or video files to the media storage (max 10 files)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Files to upload (max 10, jpg, png, gif, webp, mp4, mpeg, mov)',
+        },
+      },
+    },
+  })
+  @ApiQuery({ name: 'folder', required: false, description: 'Target folder for the files', example: 'products' })
+  @ApiResponse({
+    status: 201,
+    description: 'Files uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid file type or no files provided',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   @UseInterceptors(
     FilesInterceptor('files', 10, {
       // Max 10 files
@@ -117,10 +186,22 @@ export class MediaController {
     return this.mediaService.uploadMultipleFiles(files, folder || 'products');
   }
 
-  /**
-   * List files in ImageKit
-   */
   @Get('list')
+  @ApiOperation({
+    summary: 'List files',
+    description: 'Lists files stored in the media storage with pagination',
+  })
+  @ApiQuery({ name: 'folder', required: false, description: 'Folder to list files from' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of files to return', example: '50' })
+  @ApiQuery({ name: 'skip', required: false, description: 'Number of files to skip', example: '0' })
+  @ApiResponse({
+    status: 200,
+    description: 'Files listed successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async listFiles(
     @Query('folder') folder?: string,
     @Query('limit') limit: string = '50',
@@ -132,37 +213,100 @@ export class MediaController {
     return this.mediaService.listFiles(folder, limitNum, skipNum);
   }
 
-  /**
-   * Get file details
-   */
   @Get('details/:fileId')
+  @ApiOperation({
+    summary: 'Get file details',
+    description: 'Retrieves detailed information about a specific file',
+  })
+  @ApiParam({ name: 'fileId', description: 'File ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'File details retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'File not found',
+  })
   async getFileDetails(@Param('fileId') fileId: string) {
     return this.mediaService.getFileDetails(fileId);
   }
 
-  /**
-   * Get authentication parameters for client-side upload
-   */
   @Get('auth')
+  @ApiOperation({
+    summary: 'Get authentication parameters',
+    description: 'Gets authentication parameters for client-side file uploads',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Authentication parameters retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async getAuthParams() {
     return this.mediaService.getAuthenticationParameters();
   }
 
-  /**
-   * Delete a file from ImageKit
-   */
   @Delete(':fileId')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a file',
+    description: 'Deletes a single file from the media storage',
+  })
+  @ApiParam({ name: 'fileId', description: 'File ID to delete' })
+  @ApiResponse({
+    status: 200,
+    description: 'File deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'File not found',
+  })
   async deleteFile(@Param('fileId') fileId: string) {
     await this.mediaService.deleteFile(fileId);
     return { message: 'File deleted successfully' };
   }
 
-  /**
-   * Delete multiple files from ImageKit
-   */
   @Delete()
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete multiple files',
+    description: 'Deletes multiple files from the media storage',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fileIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of file IDs to delete',
+        },
+      },
+      required: ['fileIds'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Files deleted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - No file IDs provided',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async deleteMultipleFiles(@Body('fileIds') fileIds: string[]) {
     if (!fileIds || fileIds.length === 0) {
       throw new BadRequestException('No file IDs provided');

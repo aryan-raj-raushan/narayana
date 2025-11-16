@@ -11,24 +11,67 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderStatus } from './schemas/order.schema';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+@ApiTags('Order')
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a new order',
+    description: 'Creates an order from the user cart',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Order created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid order data or empty cart',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async createOrder(@Request() req, @Body() createOrderDto: CreateOrderDto) {
     return this.orderService.createOrderFromCart(req.user.userId, createOrderDto);
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'Get all orders',
+    description: 'Retrieves a paginated list of all orders with optional filters (admin)',
+  })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: '1' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', example: '10' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by order status', enum: OrderStatus })
+  @ApiQuery({ name: 'fromDate', required: false, description: 'Filter orders from this date (ISO format)' })
+  @ApiQuery({ name: 'toDate', required: false, description: 'Filter orders until this date (ISO format)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orders retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -48,6 +91,20 @@ export class OrderController {
   }
 
   @Get('my-orders')
+  @ApiOperation({
+    summary: 'Get user orders',
+    description: 'Retrieves a paginated list of orders for the authenticated user',
+  })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: '1' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', example: '10' })
+  @ApiResponse({
+    status: 200,
+    description: 'User orders retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async getMyOrders(
     @Request() req,
     @Query('page') page: string = '1',
@@ -60,6 +117,19 @@ export class OrderController {
   }
 
   @Get('stats')
+  @ApiOperation({
+    summary: 'Get order statistics',
+    description: 'Retrieves order statistics for a user. Admins can view any user stats.',
+  })
+  @ApiQuery({ name: 'userId', required: false, description: 'User ID to get stats for (admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order statistics retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async getOrderStats(@Request() req, @Query('userId') userId?: string) {
     // If userId is provided, admin can view any user's stats
     // Otherwise, get stats for current user
@@ -68,16 +138,71 @@ export class OrderController {
   }
 
   @Get('order-id/:orderId')
+  @ApiOperation({
+    summary: 'Get order by order ID',
+    description: 'Retrieves a specific order by its order ID string',
+  })
+  @ApiParam({ name: 'orderId', description: 'Order ID string' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
   async findByOrderId(@Param('orderId') orderId: string) {
     return this.orderService.findByOrderId(orderId);
   }
 
   @Get(':id')
+  @ApiOperation({
+    summary: 'Get order by ID',
+    description: 'Retrieves a specific order by its database ID',
+  })
+  @ApiParam({ name: 'id', description: 'Order database ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order retrieved successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
   async findOne(@Param('id') id: string) {
     return this.orderService.findOne(id);
   }
 
   @Patch(':id/status')
+  @ApiOperation({
+    summary: 'Update order status',
+    description: 'Updates the status of an order (admin operation)',
+  })
+  @ApiParam({ name: 'id', description: 'Order ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order status updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid status',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
   async updateStatus(@Param('id') id: string, @Body() updateOrderStatusDto: UpdateOrderStatusDto) {
     return this.orderService.updateStatus(id, updateOrderStatusDto);
   }
