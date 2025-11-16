@@ -30,7 +30,13 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
+      // Don't redirect on login/register endpoints - let the page handle the error
+      const url = error.config?.url || '';
+      const isAuthEndpoint = url.includes('/auth/login') ||
+                             url.includes('/user/login') ||
+                             url.includes('/user/register');
+
+      if (!isAuthEndpoint && typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('userType');
