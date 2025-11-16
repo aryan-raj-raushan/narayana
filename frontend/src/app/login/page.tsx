@@ -13,9 +13,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadFromStorage();
-  }, [loadFromStorage]);
 
   useEffect(() => {
     if (userType === 'admin') {

@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import { CartItem } from '@/types';
+import { CartItem, CartSummary } from '@/types';
 import { cartApi } from '@/lib/api';
 
 interface CartState {
   items: CartItem[];
+  summary: CartSummary | null;
   count: number;
   isLoading: boolean;
   error: string | null;
@@ -20,6 +21,7 @@ interface CartState {
 
 export const useCartStore = create<CartState>((set) => ({
   items: [],
+  summary: null,
   count: 0,
   isLoading: false,
   error: null,
@@ -28,7 +30,9 @@ export const useCartStore = create<CartState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await cartApi.get();
-      set({ items: response.data, isLoading: false });
+      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+      const summary = response.data?.summary || null;
+      set({ items, summary, isLoading: false });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({
@@ -53,8 +57,11 @@ export const useCartStore = create<CartState>((set) => ({
       await cartApi.add({ productId, quantity });
       const response = await cartApi.get();
       const countResponse = await cartApi.getCount();
+      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+      const summary = response.data?.summary || null;
       set({
-        items: response.data,
+        items,
+        summary,
         count: countResponse.data.count || 0,
         isLoading: false
       });
@@ -73,7 +80,9 @@ export const useCartStore = create<CartState>((set) => ({
     try {
       await cartApi.update(itemId, quantity);
       const response = await cartApi.get();
-      set({ items: response.data, isLoading: false });
+      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+      const summary = response.data?.summary || null;
+      set({ items, summary, isLoading: false });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({
@@ -90,8 +99,11 @@ export const useCartStore = create<CartState>((set) => ({
       await cartApi.remove(itemId);
       const response = await cartApi.get();
       const countResponse = await cartApi.getCount();
+      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+      const summary = response.data?.summary || null;
       set({
-        items: response.data,
+        items,
+        summary,
         count: countResponse.data.count || 0,
         isLoading: false
       });
@@ -109,7 +121,7 @@ export const useCartStore = create<CartState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       await cartApi.clear();
-      set({ items: [], count: 0, isLoading: false });
+      set({ items: [], summary: null, count: 0, isLoading: false });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({

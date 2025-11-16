@@ -10,21 +10,35 @@ import { orderApi } from '@/lib/api';
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, isLoading, error, fetchCart, updateQuantity, removeFromCart, clearCart, clearError } = useCartStore();
-  const { userType, loadFromStorage } = useAuthStore();
+  const { items, summary, isLoading, error, fetchCart, updateQuantity, removeFromCart, clearCart, clearError } = useCartStore();
+  const { userType } = useAuthStore();
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
 
   useEffect(() => {
-    loadFromStorage();
     fetchCart();
-  }, [loadFromStorage, fetchCart]);
+  }, [fetchCart]);
 
   const calculateTotal = () => {
+    if (summary) {
+      return summary.total;
+    }
     return items.reduce((total, item) => {
-      const price = item.productId.discountPrice || item.productId.price;
-      return total + price * item.quantity;
+      return total + (item.itemTotal || item.price * item.quantity);
     }, 0);
+  };
+
+  const getSubtotal = () => {
+    if (summary) {
+      return summary.subtotal;
+    }
+    return items.reduce((total, item) => {
+      return total + (item.itemSubtotal || item.price * item.quantity);
+    }, 0);
+  };
+
+  const getTotalDiscount = () => {
+    return summary?.totalDiscount || 0;
   };
 
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
@@ -148,14 +162,14 @@ export default function CartPage() {
             <div className="lg:col-span-8">
               <div className="bg-white shadow rounded-lg">
                 <ul className="divide-y divide-gray-200">
-                  {items.map((item) => (
+                  {items?.map((item) => (
                     <li key={item._id} className="p-6">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 w-24 h-24 relative">
-                          {item.productId.images && item.productId.images[0] ? (
+                        <div className="shrink-0 w-24 h-24 relative">
+                          {item?.product?.images && item?.product?.images[0] ? (
                             <Image
-                              src={item.productId.images[0]}
-                              alt={item.productId.name}
+                              src={item.product.images[0]}
+                              alt={item.product.name}
                               fill
                               className="object-cover rounded-md"
                             />
@@ -170,22 +184,27 @@ export default function CartPage() {
                         <div className="ml-6 flex-1">
                           <div className="flex justify-between">
                             <div>
-                              <h3 className="text-lg font-medium text-gray-900">{item.productId.name}</h3>
-                              <p className="mt-1 text-sm text-gray-500">SKU: {item.productId.sku}</p>
+                              <h3 className="text-lg font-medium text-gray-900">{item?.product?.name}</h3>
+                              <p className="mt-1 text-sm text-gray-500">SKU: {item?.product?.sku}</p>
                             </div>
                             <div className="text-right">
-                              {item.productId.discountPrice ? (
+                              {item?.product?.discountPrice ? (
                                 <>
                                   <p className="text-lg font-medium text-gray-900">
-                                    ${item.productId.discountPrice.toFixed(2)}
+                                    ${item.product.discountPrice.toFixed(2)}
                                   </p>
                                   <p className="text-sm text-gray-500 line-through">
-                                    ${item.productId.price.toFixed(2)}
+                                    ${item.product.price.toFixed(2)}
                                   </p>
                                 </>
                               ) : (
                                 <p className="text-lg font-medium text-gray-900">
-                                  ${item.productId.price.toFixed(2)}
+                                  ${item.price.toFixed(2)}
+                                </p>
+                              )}
+                              {(item.productDiscount > 0 || item.offerDiscount > 0) && (
+                                <p className="text-sm text-green-600">
+                                  Save ${(item.productDiscount + item.offerDiscount).toFixed(2)}
                                 </p>
                               )}
                             </div>
@@ -212,13 +231,18 @@ export default function CartPage() {
                                 </svg>
                               </button>
                             </div>
-                            <button
-                              onClick={() => handleRemoveItem(item._id)}
-                              disabled={isLoading}
-                              className="text-red-600 hover:text-red-500 text-sm font-medium"
-                            >
-                              Remove
-                            </button>
+                            <div className="text-right">
+                              <p className="text-sm font-medium text-gray-900">
+                                Subtotal: ${item.itemTotal.toFixed(2)}
+                              </p>
+                              <button
+                                onClick={() => handleRemoveItem(item._id)}
+                                disabled={isLoading}
+                                className="text-red-600 hover:text-red-500 text-sm font-medium"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -242,9 +266,15 @@ export default function CartPage() {
                 <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
                 <div className="mt-6 space-y-4">
                   <div className="flex justify-between">
-                    <p className="text-sm text-gray-600">Subtotal ({items.length} items)</p>
-                    <p className="text-sm font-medium text-gray-900">${calculateTotal().toFixed(2)}</p>
+                    <p className="text-sm text-gray-600">Subtotal ({summary?.itemCount || items.length} items)</p>
+                    <p className="text-sm font-medium text-gray-900">${getSubtotal().toFixed(2)}</p>
                   </div>
+                  {getTotalDiscount() > 0 && (
+                    <div className="flex justify-between">
+                      <p className="text-sm text-green-600">Total Discount</p>
+                      <p className="text-sm font-medium text-green-600">-${getTotalDiscount().toFixed(2)}</p>
+                    </div>
+                  )}
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between">
                       <p className="text-base font-medium text-gray-900">Total</p>

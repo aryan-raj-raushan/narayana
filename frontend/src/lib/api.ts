@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL =  'http://localhost:3000/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -156,7 +156,8 @@ export const wishlistApi = {
 export const orderApi = {
   getAll: (params?: { page?: number; limit?: number; status?: string; fromDate?: string; toDate?: string }) =>
     api.get('/orders', { params }),
-  getMyOrders: () => api.get('/orders/my-orders'),
+  getMyOrders: (params?: { page?: number; limit?: number; status?: string }) =>
+    api.get('/orders/my-orders', { params }),
   getById: (id: string) => api.get(`/orders/${id}`),
   getByOrderId: (orderId: string) => api.get(`/orders/order-id/${orderId}`),
   getStats: () => api.get('/orders/stats'),

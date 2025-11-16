@@ -224,7 +224,7 @@ export default function CreateProductPage() {
               id="name"
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter product name"
@@ -242,7 +242,7 @@ export default function CreateProductPage() {
               rows={4}
               value={formData.description || ''}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="Enter product description"
             />
           </div>
@@ -256,7 +256,7 @@ export default function CreateProductPage() {
               id="gender"
               value={formData.genderId}
               onChange={(e) => setFormData((prev) => ({ ...prev, genderId: e.target.value }))}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                 errors.genderId ? 'border-red-300' : 'border-gray-300'
               }`}
             >
@@ -280,7 +280,7 @@ export default function CreateProductPage() {
               value={formData.categoryId}
               onChange={(e) => setFormData((prev) => ({ ...prev, categoryId: e.target.value }))}
               disabled={!formData.genderId}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                 errors.categoryId ? 'border-red-300' : 'border-gray-300'
               } ${!formData.genderId ? 'bg-gray-100' : ''}`}
             >
@@ -306,7 +306,7 @@ export default function CreateProductPage() {
               value={formData.subcategoryId}
               onChange={(e) => setFormData((prev) => ({ ...prev, subcategoryId: e.target.value }))}
               disabled={!formData.categoryId}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                 errors.subcategoryId ? 'border-red-300' : 'border-gray-300'
               } ${!formData.categoryId ? 'bg-gray-100' : ''}`}
             >
@@ -387,7 +387,7 @@ export default function CreateProductPage() {
                 setFormData((prev) => ({ ...prev, stock: parseInt(e.target.value) || 0 }))
               }
               min="0"
-              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                 errors.stock ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="0"
@@ -418,7 +418,7 @@ export default function CreateProductPage() {
                 value={sizeInput}
                 onChange={(e) => setSizeInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSize())}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="text-black flex-1 text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Enter size (e.g., S, M, L, XL)"
               />
               <button
@@ -459,7 +459,7 @@ export default function CreateProductPage() {
                 value={imageInput}
                 onChange={(e) => setImageInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="text-black flex-1 text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="Enter image URL"
               />
               <button

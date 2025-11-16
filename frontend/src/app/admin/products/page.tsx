@@ -139,7 +139,7 @@ export default function ProductManagementPage() {
   };
 
   const getSubcategoryName = (subcategoryId: Subcategory | string) => {
-    if (typeof subcategoryId === 'object') return subcategoryId.name;
+    if (typeof subcategoryId === 'object') return subcategoryId?.name;
     const subcategory = subcategories.find((s) => s._id === subcategoryId);
     return subcategory?.name || 'Unknown';
   };
@@ -193,7 +193,7 @@ export default function ProductManagementPage() {
                 setCurrentPage(1);
               }}
               placeholder="Search products..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
           <div>
@@ -209,7 +209,7 @@ export default function ProductManagementPage() {
                 setSelectedSubcategory('');
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">All Genders</option>
               {genders.map((gender) => (
@@ -231,7 +231,7 @@ export default function ProductManagementPage() {
                 setSelectedSubcategory('');
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">All Categories</option>
               {filteredCategories.map((category) => (
@@ -252,7 +252,7 @@ export default function ProductManagementPage() {
                 setSelectedSubcategory(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">All Subcategories</option>
               {filteredSubcategories.map((subcategory) => (

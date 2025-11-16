@@ -120,18 +120,18 @@ export default function ProductDetailPage() {
     }
   };
 
-  const getGenderName = (genderId: Gender | string): string => {
-    if (typeof genderId === 'string') return '';
+  const getGenderName = (genderId: Gender | string | null): string => {
+    if (!genderId || typeof genderId === 'string') return '';
     return genderId.name;
   };
 
-  const getCategoryName = (categoryId: Category | string): string => {
-    if (typeof categoryId === 'string') return '';
+  const getCategoryName = (categoryId: Category | string | null): string => {
+    if (!categoryId || typeof categoryId === 'string') return '';
     return categoryId.name;
   };
 
-  const getSubcategoryName = (subcategoryId: Subcategory | string): string => {
-    if (typeof subcategoryId === 'string') return '';
+  const getSubcategoryName = (subcategoryId: Subcategory | string | null): string => {
+    if (!subcategoryId || typeof subcategoryId === 'string') return '';
     return subcategoryId.name;
   };
 
@@ -396,7 +396,7 @@ export default function ProductDetailPage() {
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`px-4 py-2 border rounded-md font-medium transition-colors ${
+                        className={`text-black px-4 py-2 border rounded-md font-medium transition-colors ${
                           selectedSize === size
                             ? 'border-blue-500 bg-blue-50 text-blue-700'
                             : 'border-gray-300 hover:border-gray-400'
@@ -415,7 +415,7 @@ export default function ProductDetailPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="text-black px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                   >
                     -
                   </button>
@@ -427,11 +427,11 @@ export default function ProductDetailPage() {
                     }
                     min="1"
                     max={product.stock}
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center"
+                    className="w-20 px-3 py-2 border border-gray-300 rounded-md text-center text-black"
                   />
                   <button
                     onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                    className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="text-black px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                   >
                     +
                   </button>

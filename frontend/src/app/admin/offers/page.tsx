@@ -286,7 +286,7 @@ export default function OfferManagementPage() {
           <select
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="all">All Offers</option>
             <option value="active">Active Only</option>
@@ -444,7 +444,7 @@ export default function OfferManagementPage() {
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                        className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                           formErrors.name ? 'border-red-300' : 'border-gray-300'
                         }`}
                       />
@@ -464,7 +464,7 @@ export default function OfferManagementPage() {
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, description: e.target.value }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-black"
                       />
                     </div>
 
@@ -482,7 +482,7 @@ export default function OfferManagementPage() {
                             rules: {},
                           }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       >
                         <option value="buyXgetY">Buy X Get Y</option>
                         <option value="bundleDiscount">Bundle Discount</option>
@@ -506,7 +506,7 @@ export default function OfferManagementPage() {
                           }))
                         }
                         min="0"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
 
@@ -526,7 +526,7 @@ export default function OfferManagementPage() {
                                 updateRules('buyQuantity', parseInt(e.target.value) || 0)
                               }
                               min="1"
-                              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                                 formErrors.buyQuantity ? 'border-red-300' : 'border-gray-300'
                               }`}
                             />
@@ -545,7 +545,7 @@ export default function OfferManagementPage() {
                                 updateRules('getQuantity', parseInt(e.target.value) || 0)
                               }
                               min="1"
-                              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                              className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                                 formErrors.getQuantity ? 'border-red-300' : 'border-gray-300'
                               }`}
                             />
@@ -568,7 +568,7 @@ export default function OfferManagementPage() {
                             }
                             step="0.01"
                             min="0"
-                            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                            className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                               formErrors.bundlePrice ? 'border-red-300' : 'border-gray-300'
                             }`}
                           />
@@ -590,7 +590,7 @@ export default function OfferManagementPage() {
                             }
                             min="1"
                             max="100"
-                            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                            className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                               formErrors.discountPercentage ? 'border-red-300' : 'border-gray-300'
                             }`}
                           />
@@ -614,7 +614,7 @@ export default function OfferManagementPage() {
                             }
                             step="0.01"
                             min="0"
-                            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                            className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                               formErrors.discountAmount ? 'border-red-300' : 'border-gray-300'
                             }`}
                           />
@@ -639,7 +639,7 @@ export default function OfferManagementPage() {
                             productIds: Array.from(e.target.selectedOptions, (opt) => opt.value),
                           }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
+                        className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
                       >
                         {products.map((product) => (
                           <option key={product._id} value={product._id}>
@@ -664,7 +664,7 @@ export default function OfferManagementPage() {
                             categoryIds: Array.from(e.target.selectedOptions, (opt) => opt.value),
                           }))
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
+                        className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
                       >
                         {categories.map((category) => (
                           <option key={category._id} value={category._id}>
@@ -686,7 +686,7 @@ export default function OfferManagementPage() {
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, startDate: e.target.value }))
                         }
-                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                        className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                           formErrors.startDate ? 'border-red-300' : 'border-gray-300'
                         }`}
                       />
@@ -706,7 +706,7 @@ export default function OfferManagementPage() {
                         onChange={(e) =>
                           setFormData((prev) => ({ ...prev, endDate: e.target.value }))
                         }
-                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                        className={`text-black w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
                           formErrors.endDate ? 'border-red-300' : 'border-gray-300'
                         }`}
                       />

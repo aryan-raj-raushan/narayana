@@ -87,14 +87,43 @@ export interface Subcategory {
 }
 
 // Cart types
+export interface CartProduct {
+  _id: string;
+  name: string;
+  sku: string;
+  price: number;
+  images: string[];
+  stock: number;
+  isActive: boolean;
+  discountPrice?: number;
+}
+
 export interface CartItem {
   _id: string;
-  userId: string;
-  productId: Product;
+  product: CartProduct;
   quantity: number;
+  price: number;
+  itemSubtotal: number;
+  productDiscount: number;
+  offerDiscount: number;
+  itemTotal: number;
+  appliedOffer: string | null;
   addedAt: string;
-  createdAt: string;
-  updatedAt: string;
+}
+
+export interface CartSummary {
+  subtotal: number;
+  totalProductDiscount: number;
+  totalOfferDiscount: number;
+  totalDiscount: number;
+  total: number;
+  totalItems: number;
+  itemCount: number;
+}
+
+export interface CartResponse {
+  items: CartItem[];
+  summary: CartSummary;
 }
 
 // Wishlist types
