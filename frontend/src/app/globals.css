@@ -14,22 +14,9 @@
   --info: #3b82f6;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: #000000;
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -40,4 +27,46 @@ html {
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure all text is black */
+* {
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, div, label, a {
+  color: #000000;
+}
+
+/* Exception for buttons and specific colored elements */
+.text-white {
+  color: #ffffff !important;
+}
+
+.text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.text-gray-700 {
+  color: #374151 !important;
+}
+
+.text-red-600, .text-red-800 {
+  color: #dc2626 !important;
+}
+
+.text-green-600 {
+  color: #16a34a !important;
+}
+
+.text-blue-600 {
+  color: #2563eb !important;
+}
+
+.text-indigo-600 {
+  color: #4f46e5 !important;
 }
