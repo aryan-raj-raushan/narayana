@@ -213,15 +213,15 @@ function ProductsPageContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
       <Header />
 
-      <main className="flex-grow bg-gray-50">
+      <main className="flex-grow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Shop</h1>
+            <p className="text-sm text-gray-600 mt-1">
               Browse our collection of quality products
             </p>
           </div>
@@ -234,9 +234,9 @@ function ProductsPageContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="input flex-grow"
+                className="flex-grow px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm"
               />
-              <button type="submit" className="btn btn-primary">
+              <button type="submit" className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors">
                 Search
               </button>
             </div>
@@ -245,8 +245,11 @@ function ProductsPageContent() {
           {/* Mobile Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="md:hidden btn btn-outline w-full mb-4"
+            className="md:hidden w-full mb-4 px-4 py-2.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
             {showFilters ? 'Hide Filters' : 'Show Filters'}
           </button>
 
@@ -255,26 +258,26 @@ function ProductsPageContent() {
             <aside
               className={`${
                 showFilters ? 'block' : 'hidden'
-              } md:block w-full md:w-64 flex-shrink-0`}
+              } md:block w-full md:w-56 flex-shrink-0`}
             >
-              <div className="card p-6 sticky top-24">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Filters</h2>
+              <div className="bg-white border border-gray-200 rounded-lg p-5 sticky top-24">
+                <div className="flex justify-between items-center mb-5">
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Filters</h2>
                   <button
                     onClick={clearFilters}
-                    className="text-sm text-blue-600 hover:text-blue-800"
+                    className="text-xs text-gray-600 hover:text-gray-900 underline"
                   >
                     Clear All
                   </button>
                 </div>
 
                 {/* Gender Filter */}
-                <div className="form-group">
-                  <label className="label">Gender</label>
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Gender</label>
                   <select
                     value={selectedGender}
                     onChange={(e) => setSelectedGender(e.target.value)}
-                    className="input"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                   >
                     <option value="">All</option>
                     {genders.map((gender) => (
@@ -287,12 +290,12 @@ function ProductsPageContent() {
 
                 {/* Category Filter */}
                 {categories.length > 0 && (
-                  <div className="form-group">
-                    <label className="label">Category</label>
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Category</label>
                     <select
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                     >
                       <option value="">All</option>
                       {categories.map((category) => (
@@ -306,12 +309,12 @@ function ProductsPageContent() {
 
                 {/* Subcategory Filter */}
                 {subcategories.length > 0 && (
-                  <div className="form-group">
-                    <label className="label">Subcategory</label>
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Subcategory</label>
                     <select
                       value={selectedSubcategory}
                       onChange={(e) => setSelectedSubcategory(e.target.value)}
-                      className="input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                     >
                       <option value="">All</option>
                       {subcategories.map((subcategory) => (
@@ -324,15 +327,15 @@ function ProductsPageContent() {
                 )}
 
                 {/* Price Range */}
-                <div className="form-group">
-                  <label className="label">Price Range</label>
+                <div className="mb-5">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Price Range</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={minPrice}
                       onChange={(e) => setMinPrice(e.target.value)}
                       placeholder="Min"
-                      className="input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                       min="0"
                     />
                     <input
@@ -340,7 +343,7 @@ function ProductsPageContent() {
                       value={maxPrice}
                       onChange={(e) => setMaxPrice(e.target.value)}
                       placeholder="Max"
-                      className="input"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                       min="0"
                     />
                   </div>
@@ -351,7 +354,7 @@ function ProductsPageContent() {
                     setCurrentPage(1);
                     fetchProducts();
                   }}
-                  className="btn btn-primary w-full"
+                  className="w-full px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
                 >
                   Apply Filters
                 </button>
@@ -361,24 +364,21 @@ function ProductsPageContent() {
             {/* Products Grid */}
             <div className="flex-grow">
               {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="card animate-pulse">
-                      <div className="h-48 bg-gray-200"></div>
-                      <div className="p-4">
-                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
-                        <div className="h-8 bg-gray-200 rounded"></div>
-                      </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="aspect-[4/5] bg-gray-100 rounded-lg mb-3"></div>
+                      <div className="h-3 bg-gray-100 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-100 rounded w-2/3"></div>
                     </div>
                   ))}
                 </div>
               ) : error ? (
                 <div className="text-center py-12">
-                  <p className="text-red-600 mb-4">{error}</p>
+                  <p className="text-gray-600 mb-4">{error}</p>
                   <button
                     onClick={fetchProducts}
-                    className="btn btn-primary"
+                    className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
                   >
                     Retry
                   </button>
@@ -386,7 +386,7 @@ function ProductsPageContent() {
               ) : products.length === 0 ? (
                 <div className="text-center py-12">
                   <svg
-                    className="w-16 h-16 mx-auto text-gray-400 mb-4"
+                    className="w-12 h-12 mx-auto text-gray-300 mb-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -394,42 +394,42 @@ function ProductsPageContent() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      strokeWidth={1}
+                      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                     />
                   </svg>
-                  <p className="text-gray-600">No products found</p>
+                  <p className="text-gray-600 text-sm mb-4">No products found</p>
                   <button
                     onClick={clearFilters}
-                    className="btn btn-outline mt-4"
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Clear Filters
                   </button>
                 </div>
               ) : (
                 <>
-                  <div className="mb-4 text-gray-600">
+                  <div className="mb-4 text-xs text-gray-600">
                     Showing {products.length} of {pagination.total} products
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {products.map((product) => (
-                      <div key={product._id} className="card hover:shadow-lg transition-shadow">
+                      <div key={product._id} className="group">
                         {/* Product Image */}
-                        <Link href={`/products/${product._id}`}>
-                          <div className="relative h-48 bg-gray-100">
+                        <Link href={`/products/${product._id}`} className="block">
+                          <div className="relative aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden mb-3">
                             {product.images && product.images.length > 0 ? (
                               <Image
                                 src={product.images[0]}
                                 alt={product.name}
                                 fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                              <div className="w-full h-full flex items-center justify-center text-gray-300">
                                 <svg
-                                  className="w-16 h-16"
+                                  className="w-12 h-12"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -437,128 +437,91 @@ function ProductsPageContent() {
                                   <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    strokeWidth={2}
+                                    strokeWidth={1}
                                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                                   />
                                 </svg>
                               </div>
                             )}
                             {product.discountPrice && (
-                              <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                                {Math.round(
+                              <span className="absolute top-2 left-2 bg-gray-900 text-white text-xs px-2 py-1 rounded font-medium">
+                                -{Math.round(
                                   ((product.price - product.discountPrice) /
                                     product.price) *
                                     100
-                                )}
-                                % OFF
+                                )}%
                               </span>
                             )}
+                            {/* Quick Action Buttons */}
+                            <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleAddToWishlist(product._id);
+                                }}
+                                disabled={addingToWishlist === product._id}
+                                className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 transition-colors"
+                                title="Add to Wishlist"
+                              >
+                                {addingToWishlist === product._id ? (
+                                  <svg className="animate-spin h-4 w-4 text-gray-700" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </Link>
 
                         {/* Product Info */}
-                        <div className="p-4">
+                        <div>
                           <Link href={`/products/${product._id}`}>
-                            <h3 className="text-lg font-semibold mb-2 hover:text-blue-600 transition-colors line-clamp-2">
+                            <h3 className="text-sm font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-gray-600 transition-colors">
                               {product.name}
                             </h3>
                           </Link>
 
                           {/* Price */}
-                          <div className="mb-4">
+                          <div className="mb-3">
                             {product.discountPrice ? (
                               <div className="flex items-center gap-2">
-                                <span className="text-xl font-bold text-green-600">
+                                <span className="text-sm font-semibold text-gray-900">
                                   ${product.discountPrice.toFixed(2)}
                                 </span>
-                                <span className="text-sm text-gray-500 line-through">
+                                <span className="text-xs text-gray-500 line-through">
                                   ${product.price.toFixed(2)}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-xl font-bold">
+                              <span className="text-sm font-semibold text-gray-900">
                                 ${product.price.toFixed(2)}
                               </span>
                             )}
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleAddToCart(product._id)}
-                              disabled={addingToCart === product._id}
-                              className="btn btn-primary flex-grow text-sm"
-                            >
-                              {addingToCart === product._id ? (
-                                <span className="flex items-center justify-center">
-                                  <svg
-                                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <circle
-                                      className="opacity-25"
-                                      cx="12"
-                                      cy="12"
-                                      r="10"
-                                      stroke="currentColor"
-                                      strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                      className="opacity-75"
-                                      fill="currentColor"
-                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                  </svg>
-                                  Adding...
-                                </span>
-                              ) : (
-                                'Add to Cart'
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleAddToWishlist(product._id)}
-                              disabled={addingToWishlist === product._id}
-                              className="btn btn-outline p-2"
-                              title="Add to Wishlist"
-                            >
-                              {addingToWishlist === product._id ? (
-                                <svg
-                                  className="animate-spin h-5 w-5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
+                          {/* Add to Cart Button */}
+                          <button
+                            onClick={() => handleAddToCart(product._id)}
+                            disabled={addingToCart === product._id}
+                            className="w-full px-3 py-2 bg-gray-900 text-white text-xs font-medium rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50"
+                          >
+                            {addingToCart === product._id ? (
+                              <span className="flex items-center justify-center">
+                                <svg className="animate-spin -ml-1 mr-2 h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                              ) : (
-                                <svg
-                                  className="w-5 h-5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                  />
-                                </svg>
-                              )}
-                            </button>
-                          </div>
+                                Adding...
+                              </span>
+                            ) : (
+                              'Add to Cart'
+                            )}
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -566,12 +529,12 @@ function ProductsPageContent() {
 
                   {/* Pagination */}
                   {pagination.totalPages > 1 && (
-                    <div className="mt-8 flex justify-center">
-                      <nav className="flex items-center gap-2">
+                    <div className="mt-10 flex justify-center">
+                      <nav className="flex items-center gap-1">
                         <button
                           onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                           disabled={currentPage === 1}
-                          className="btn btn-outline disabled:opacity-50"
+                          className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           Previous
                         </button>
@@ -587,10 +550,10 @@ function ProductsPageContent() {
                               <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
-                                className={`btn ${
+                                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                                   currentPage === page
-                                    ? 'btn-primary'
-                                    : 'btn-outline'
+                                    ? 'bg-gray-900 text-white'
+                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                                 }`}
                               >
                                 {page}
@@ -601,7 +564,7 @@ function ProductsPageContent() {
                             page === currentPage + 2
                           ) {
                             return (
-                              <span key={page} className="px-2">
+                              <span key={page} className="px-2 text-gray-500">
                                 ...
                               </span>
                             );
@@ -616,7 +579,7 @@ function ProductsPageContent() {
                             )
                           }
                           disabled={currentPage === pagination.totalPages}
-                          className="btn btn-outline disabled:opacity-50"
+                          className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           Next
                         </button>
@@ -638,8 +601,8 @@ function ProductsPageContent() {
 export default function ProductsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-900 border-t-transparent"></div>
       </div>
     }>
       <ProductsPageContent />
