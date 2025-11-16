@@ -6,9 +6,7 @@ import {
   TouchableOpacity,
   Text,
   Image,
-  Modal,
   ActivityIndicator,
-  Platform,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -199,7 +197,7 @@ const SearchAutosuggest: React.FC<SearchAutosuggestProps> = ({
       </View>
 
       {showResults && hasResults && (
-        <View style={[styles.resultsContainer, Platform.OS === 'web' && styles.resultsContainerWeb]}>
+        <View style={styles.resultsContainer}>
           <FlatList
             data={allResults}
             keyExtractor={(item) => `${item.type}-${item._id}`}
@@ -216,7 +214,7 @@ const SearchAutosuggest: React.FC<SearchAutosuggestProps> = ({
       )}
 
       {showResults && !hasResults && !loading && query.length >= 2 && (
-        <View style={[styles.resultsContainer, Platform.OS === 'web' && styles.resultsContainerWeb]}>
+        <View style={styles.resultsContainer}>
           <View style={styles.noResults}>
             <Ionicons name="search-outline" size={40} color="#ccc" />
             <Text style={styles.noResultsText}>No results found for "{query}"</Text>
@@ -269,9 +267,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
-  },
-  resultsContainerWeb: {
-    maxHeight: 500,
   },
   resultsList: {
     maxHeight: 400,

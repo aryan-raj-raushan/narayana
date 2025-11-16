@@ -11,9 +11,10 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { UserStackParamList } from '../../navigation/UserNavigator';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { UserStackParamList, MainTabParamList } from '../../navigation/UserNavigator';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { fetchFeaturedProducts } from '../../store/slices/productSlice';
 import { fetchCart } from '../../store/slices/cartSlice';
@@ -26,7 +27,10 @@ import SearchAutosuggest from '../../components/SearchAutosuggest';
 
 const { width } = Dimensions.get('window');
 
-type NavigationProp = NativeStackNavigationProp<UserStackParamList>;
+type NavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList>,
+  NativeStackNavigationProp<UserStackParamList>
+>;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();

@@ -104,6 +104,7 @@ export interface Product {
   sliders?: string[];
   tags?: string[];
   isActive: boolean;
+  isFeatured?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -300,4 +301,15 @@ export interface MediaUploadResponse {
   name: string;
   size: number;
   fileType: string;
+}
+
+// User types
+export interface User {
+  _id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  addresses: ShippingAddress[];
+  createdAt: string;
+  updatedAt: string;
 }

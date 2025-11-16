@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,24 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Platform,
   Alert,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { CompositeNavigationProp, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import userService, { User, AddressData } from '../../services/user.service';
+import { UserStackParamList, MainTabParamList } from '../../navigation/UserNavigator';
+
+type NavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList>,
+  NativeStackNavigationProp<UserStackParamList>
+>;
 
 const UserProfileScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +55,7 @@ const UserProfileScreen: React.FC = () => {
         // Token expired or invalid
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('user');
-        navigation.navigate('UserLogin' as never);
+        navigation.navigate('UserLogin');
       }
     } finally {
       setLoading(false);
@@ -112,19 +119,11 @@ const UserProfileScreen: React.FC = () => {
       setUser(updated);
       await AsyncStorage.setItem('user', JSON.stringify(updated));
       setEditMode(false);
-      if (Platform.OS === 'web') {
-        alert('Profile updated successfully!');
-      } else {
-        Alert.alert('Success', 'Profile updated successfully!');
-      }
+      Alert.alert('Success', 'Profile updated successfully!');
     } catch (error: any) {
       console.error('Update profile error:', error);
       const message = error.response?.data?.message || 'Failed to update profile';
-      if (Platform.OS === 'web') {
-        alert(message);
-      } else {
-        Alert.alert('Error', message);
-      }
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }
@@ -146,23 +145,17 @@ const UserProfileScreen: React.FC = () => {
     const confirmLogout = () => {
       AsyncStorage.removeItem('userToken');
       AsyncStorage.removeItem('user');
-      navigation.navigate('Home' as never);
+      navigation.navigate('Home');
     };
 
-    if (Platform.OS === 'web') {
-      if (confirm('Are you sure you want to logout?')) {
-        confirmLogout();
-      }
-    } else {
-      Alert.alert(
-        'Logout',
-        'Are you sure you want to logout?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Logout', onPress: confirmLogout, style: 'destructive' },
-        ]
-      );
-    }
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Logout', onPress: confirmLogout, style: 'destructive' },
+      ]
+    );
   };
 
   const handleDeleteAddress = async (index: number) => {
@@ -170,35 +163,21 @@ const UserProfileScreen: React.FC = () => {
       try {
         const updated = await userService.deleteAddress(index);
         setUser(updated);
-        if (Platform.OS === 'web') {
-          alert('Address deleted successfully!');
-        } else {
-          Alert.alert('Success', 'Address deleted successfully!');
-        }
+        Alert.alert('Success', 'Address deleted successfully!');
       } catch (error: any) {
         const message = error.response?.data?.message || 'Failed to delete address';
-        if (Platform.OS === 'web') {
-          alert(message);
-        } else {
-          Alert.alert('Error', message);
-        }
+        Alert.alert('Error', message);
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (confirm('Are you sure you want to delete this address?')) {
-        confirmDelete();
-      }
-    } else {
-      Alert.alert(
-        'Delete Address',
-        'Are you sure you want to delete this address?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', onPress: confirmDelete, style: 'destructive' },
-        ]
-      );
-    }
+    Alert.alert(
+      'Delete Address',
+      'Are you sure you want to delete this address?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: confirmDelete, style: 'destructive' },
+      ]
+    );
   };
 
   const handleSetDefaultAddress = async (index: number) => {
@@ -207,11 +186,7 @@ const UserProfileScreen: React.FC = () => {
       setUser(updated);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to set default address';
-      if (Platform.OS === 'web') {
-        alert(message);
-      } else {
-        Alert.alert('Error', message);
-      }
+      Alert.alert('Error', message);
     }
   };
 
@@ -362,7 +337,7 @@ const UserProfileScreen: React.FC = () => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Saved Addresses</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('AddAddress' as never, { mode: 'add' } as never)}>
+          <TouchableOpacity onPress={() => navigation.navigate('AddAddress', { mode: 'add' })}>
             <Ionicons name="add-circle-outline" size={24} color="#6200ee" />
           </TouchableOpacity>
         </View>
@@ -398,7 +373,7 @@ const UserProfileScreen: React.FC = () => {
                 )}
                 <TouchableOpacity
                   style={styles.addressActionButton}
-                  onPress={() => navigation.navigate('AddAddress' as never, { mode: 'edit', index, address } as never)}
+                  onPress={() => navigation.navigate('AddAddress', { mode: 'edit', index, address })}
                 >
                   <Ionicons name="create-outline" size={18} color="#6200ee" />
                   <Text style={styles.addressActionText}>Edit</Text>
@@ -419,7 +394,7 @@ const UserProfileScreen: React.FC = () => {
             <Text style={styles.emptyText}>No saved addresses</Text>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => navigation.navigate('AddAddress' as never, { mode: 'add' } as never)}
+              onPress={() => navigation.navigate('AddAddress', { mode: 'add' })}
             >
               <Text style={styles.addButtonText}>Add Address</Text>
             </TouchableOpacity>
@@ -431,7 +406,7 @@ const UserProfileScreen: React.FC = () => {
       <View style={styles.section}>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => navigation.navigate('ChangePassword' as never)}
+          onPress={() => navigation.navigate('ChangePassword')}
         >
           <Ionicons name="key-outline" size={24} color="#333" />
           <Text style={styles.actionButtonText}>Change Password</Text>

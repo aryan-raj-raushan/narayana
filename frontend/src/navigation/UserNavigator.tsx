@@ -17,7 +17,7 @@ import ChangePasswordScreen from '../screens/user/ChangePasswordScreen';
 
 export type UserStackParamList = {
   Main: undefined;
-  ProductList: { genderId?: string; categoryId?: string; subcategoryId?: string };
+  ProductList: { genderId?: string; categoryId?: string; subcategoryId?: string; search?: string };
   ProductDetail: { productId: string };
   Checkout: undefined;
   OrderSuccess: { orderId: string };

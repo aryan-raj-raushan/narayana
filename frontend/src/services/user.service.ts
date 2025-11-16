@@ -45,6 +45,8 @@ export interface User {
   lastLoginAt?: Date;
   emailVerified?: boolean;
   phoneVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {

@@ -61,10 +61,16 @@ class OfferService {
    * Check if offer is currently valid
    */
   isOfferValid(offer: Offer): boolean {
+    if (!offer.isActive) return false;
     const now = new Date();
-    const start = new Date(offer.startDate);
-    const end = new Date(offer.endDate);
-    return offer.isActive && now >= start && now <= end;
+
+    // If no date restrictions, offer is valid
+    if (!offer.startDate && !offer.endDate) return true;
+
+    const start = offer.startDate ? new Date(offer.startDate) : new Date(0);
+    const end = offer.endDate ? new Date(offer.endDate) : new Date(8640000000000000); // Max date
+
+    return now >= start && now <= end;
   }
 
   /**
