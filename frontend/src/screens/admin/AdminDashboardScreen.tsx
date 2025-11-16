@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AdminStackParamList } from '../../navigation/AdminNavigator';
 import { useAppDispatch, useAppSelector } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
@@ -95,9 +96,13 @@ const AdminDashboardScreen: React.FC = () => {
   const confirmLogout = async () => {
     setConfirmLogoutVisible(false);
     await dispatch(logout());
-    // Redirect to admin login page after logout
+    // Clear user type from storage
+    await AsyncStorage.removeItem('userType');
+    await AsyncStorage.removeItem('adminToken');
+    await AsyncStorage.removeItem('admin');
+    // Redirect to login page after logout
     if (Platform.OS === 'web') {
-      window.location.href = '/adminLogin';
+      window.location.href = '/login';
     }
   };
 

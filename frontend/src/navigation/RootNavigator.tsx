@@ -2,11 +2,12 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { checkAuth } from '../store/slices/authSlice';
 import AdminNavigator from './AdminNavigator';
 import UserNavigator from './UserNavigator';
-import AdminLoginScreen from '../screens/admin/AdminLoginScreen';
+import LoginScreen from '../screens/common/LoginScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,11 +21,10 @@ const linking = {
   ],
   config: {
     screens: {
-      AdminLogin: 'adminLogin',
+      Login: 'login',
       Admin: {
         path: 'admin',
         screens: {
-          AdminLogin: 'login',
           AdminDashboard: 'dashboard',
           AdminGender: 'genders',
           AdminCategory: 'categories',
@@ -50,7 +50,6 @@ const linking = {
           ProductDetail: 'product/:productId',
           Checkout: 'checkout',
           OrderSuccess: 'order-success/:orderId',
-          UserLogin: 'login',
           UserRegister: 'register',
           AddAddress: 'address/add',
           ChangePassword: 'change-password',
@@ -62,70 +61,70 @@ const linking = {
 
 const RootNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
-  const [isCheckingAuth, setIsCheckingAuth] = React.useState(true);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const [userType, setUserType] = React.useState<'admin' | 'user' | null>(null);
+  const [initializing, setInitializing] = React.useState(true);
 
   useEffect(() => {
     // Check authentication status on app load
     const checkAuthStatus = async () => {
-      if (Platform.OS === 'web') {
-        const path = window.location.pathname;
+      try {
+        // Check if user is logged in and what type
+        const storedUserType = await AsyncStorage.getItem('userType');
+        setUserType(storedUserType as 'admin' | 'user' | null);
 
-        // If on admin route or adminLogin, attempt to restore auth state
-        if (path.startsWith('/admin') || path === '/adminLogin') {
+        // If admin type stored, try to restore admin auth
+        if (storedUserType === 'admin') {
           try {
-            // Try to restore auth from stored token
             await dispatch(checkAuth()).unwrap();
+            console.log('Admin auth restored successfully');
           } catch (error) {
-            console.error('Auth check failed:', error);
-            // If auth check fails and not on login page, redirect to login
-            if (path !== '/adminLogin' && path !== '/admin/login') {
-              window.location.href = '/adminLogin';
-            }
+            console.error('Admin auth check failed:', error);
+            // Clear stored data if auth fails
+            await AsyncStorage.removeItem('userType');
+            await AsyncStorage.removeItem('adminToken');
+            setUserType(null);
           }
         }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+      } finally {
+        setInitializing(false);
       }
-      setIsCheckingAuth(false);
     };
 
     checkAuthStatus();
   }, [dispatch]);
 
-  // Redirect to dashboard after successful login
+  // Listen for userType changes
   useEffect(() => {
-    if (Platform.OS === 'web' && isAuthenticated && !isCheckingAuth) {
-      const path = window.location.pathname;
-      if (path === '/adminLogin' || path === '/admin/login') {
-        window.location.href = '/admin/dashboard';
+    const checkUserType = async () => {
+      const storedUserType = await AsyncStorage.getItem('userType');
+      if (storedUserType !== userType) {
+        setUserType(storedUserType as 'admin' | 'user' | null);
       }
-    }
-  }, [isAuthenticated, isCheckingAuth]);
+    };
 
-  // Check if we're on admin route (for web)
-  const isAdminRoute = Platform.OS === 'web'
-    ? (window.location.pathname.startsWith('/admin') || window.location.pathname === '/adminLogin')
-    : false;
+    // Check every second for userType changes (mobile only)
+    const interval = setInterval(checkUserType, 1000);
+    return () => clearInterval(interval);
+  }, [userType]);
 
-  // If admin is authenticated, keep them in admin section regardless of URL
-  // This prevents admins from accessing user home/main routes
-  const shouldShowAdminSection = isAdminRoute || isAuthenticated;
+  // Determine what to show
+  const shouldShowAdmin = isAuthenticated && userType === 'admin';
 
-  // Show loading while checking auth
-  if (isCheckingAuth && Platform.OS === 'web' && isAdminRoute) {
+  // Show loading while initializing
+  if (initializing) {
     return null; // or a loading spinner
   }
 
+  console.log('RootNavigator state:', { isAuthenticated, userType, shouldShowAdmin });
+
   return (
-    <NavigationContainer linking={Platform.OS === 'web' ? linking : undefined}>
+    <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {shouldShowAdminSection ? (
-          <>
-            {!isAuthenticated ? (
-              <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
-            ) : (
-              <Stack.Screen name="Admin" component={AdminNavigator} />
-            )}
-          </>
+        {shouldShowAdmin ? (
+          <Stack.Screen name="Admin" component={AdminNavigator} />
         ) : (
           <Stack.Screen name="User" component={UserNavigator} />
         )}
