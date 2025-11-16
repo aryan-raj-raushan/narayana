@@ -11,23 +11,69 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
+@ApiTags('Product')
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a new product',
+    description: 'Creates a new product in the catalog. Requires authentication.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Product created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid product data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
   async create(@Body() createProductDto: CreateProductDto) {
     return this.productService.create(createProductDto);
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'Get all products',
+    description: 'Retrieves a paginated list of products with optional filters',
+  })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: '1' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', example: '10' })
+  @ApiQuery({ name: 'genderId', required: false, description: 'Filter by gender ID' })
+  @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
+  @ApiQuery({ name: 'subcategoryId', required: false, description: 'Filter by subcategory ID' })
+  @ApiQuery({ name: 'minPrice', required: false, description: 'Minimum price filter' })
+  @ApiQuery({ name: 'maxPrice', required: false, description: 'Maximum price filter' })
+  @ApiQuery({ name: 'underPriceAmount', required: false, description: 'Filter products under specified price' })
+  @ApiQuery({ name: 'inStock', required: false, description: 'Filter by stock availability', enum: ['true', 'false'] })
+  @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status', enum: ['true', 'false'] })
+  @ApiQuery({ name: 'search', required: false, description: 'Search term for product name or description' })
+  @ApiQuery({ name: 'familySKU', required: false, description: 'Filter by family SKU' })
+  @ApiResponse({
+    status: 200,
+    description: 'Products retrieved successfully',
+  })
   async findAll(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -62,57 +108,199 @@ export class ProductController {
   }
 
   @Get('autosuggest')
+  @ApiOperation({
+    summary: 'Get product autosuggest',
+    description: 'Returns product suggestions based on search query',
+  })
+  @ApiQuery({ name: 'q', required: true, description: 'Search query string' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of suggestions', example: '10' })
+  @ApiResponse({
+    status: 200,
+    description: 'Suggestions retrieved successfully',
+  })
   async autosuggest(@Query('q') query: string, @Query('limit') limit: string = '10') {
     const limitNum = parseInt(limit, 10);
     return this.productService.autosuggest(query, limitNum);
   }
 
   @Get('featured')
+  @ApiOperation({
+    summary: 'Get featured products',
+    description: 'Retrieves a list of featured products',
+  })
+  @ApiQuery({ name: 'limit', required: false, description: 'Maximum number of featured products', example: '12' })
+  @ApiResponse({
+    status: 200,
+    description: 'Featured products retrieved successfully',
+  })
   async getFeaturedProducts(@Query('limit') limit: string = '12') {
     const limitNum = parseInt(limit, 10);
     return this.productService.getFeaturedProducts(limitNum);
   }
 
   @Get('by-category/:categoryId')
+  @ApiOperation({
+    summary: 'Get products by category',
+    description: 'Retrieves all products belonging to a specific category',
+  })
+  @ApiParam({ name: 'categoryId', description: 'Category ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Products retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+  })
   async getProductsByCategory(@Param('categoryId') categoryId: string) {
     return this.productService.getProductsByCategory(categoryId);
   }
 
   @Get('by-subcategory/:subcategoryId')
+  @ApiOperation({
+    summary: 'Get products by subcategory',
+    description: 'Retrieves all products belonging to a specific subcategory',
+  })
+  @ApiParam({ name: 'subcategoryId', description: 'Subcategory ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Products retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Subcategory not found',
+  })
   async getProductsBySubcategory(@Param('subcategoryId') subcategoryId: string) {
     return this.productService.getProductsBySubcategory(subcategoryId);
   }
 
   @Get('by-family/:familySKU')
+  @ApiOperation({
+    summary: 'Get products by family SKU',
+    description: 'Retrieves all product variants sharing the same family SKU',
+  })
+  @ApiParam({ name: 'familySKU', description: 'Family SKU identifier' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product family retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product family not found',
+  })
   async findByFamilySKU(@Param('familySKU') familySKU: string) {
     return this.productService.findByFamilySKU(familySKU);
   }
 
   @Get('sku/:sku')
+  @ApiOperation({
+    summary: 'Get product by SKU',
+    description: 'Retrieves a single product by its SKU',
+  })
+  @ApiParam({ name: 'sku', description: 'Product SKU' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
   async findBySKU(@Param('sku') sku: string) {
     return this.productService.findBySKU(sku);
   }
 
   @Get(':id')
+  @ApiOperation({
+    summary: 'Get product by ID',
+    description: 'Retrieves a single product by its ID',
+  })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
   async findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Update a product',
+    description: 'Updates an existing product. Requires authentication.',
+  })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid product data',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productService.update(id, updateProductDto);
   }
 
   @Patch(':id/stock')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Update product stock',
+    description: 'Updates the stock quantity of a product. Requires authentication.',
+  })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock updated successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
   async updateStock(@Param('id') id: string, @Body('quantity') quantity: number) {
     return this.productService.updateStock(id, quantity);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Delete a product',
+    description: 'Removes a product from the catalog. Requires authentication.',
+  })
+  @ApiParam({ name: 'id', description: 'Product ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Product deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Authentication required',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
   async remove(@Param('id') id: string) {
     return this.productService.remove(id);
   }
