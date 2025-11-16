@@ -21,6 +21,7 @@ export default function SubcategoryManagementPage() {
     name: '',
     slug: '',
     categoryId: '',
+    image: '',
     isActive: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +108,7 @@ export default function SubcategoryManagementPage() {
       name: '',
       slug: '',
       categoryId: categories.length > 0 ? categories[0]._id : '',
+      image: '',
       isActive: true,
     });
     setIsModalOpen(true);
@@ -119,6 +121,7 @@ export default function SubcategoryManagementPage() {
       name: subcategory.name,
       slug: subcategory.slug,
       categoryId,
+      image: subcategory.image || '',
       isActive: subcategory.isActive,
     });
     setIsModalOpen(true);
@@ -131,6 +134,7 @@ export default function SubcategoryManagementPage() {
       name: '',
       slug: '',
       categoryId: '',
+      image: '',
       isActive: true,
     });
   };
@@ -278,6 +282,9 @@ export default function SubcategoryManagementPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -297,13 +304,31 @@ export default function SubcategoryManagementPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {subcategories.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                       No subcategories found. Create your first subcategory to get started.
                     </td>
                   </tr>
                 ) : (
                   subcategories.map((subcategory) => (
                     <tr key={subcategory._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {subcategory.image ? (
+                          <img
+                            src={subcategory.image}
+                            alt={subcategory.name}
+                            className="h-10 w-10 object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="%239CA3AF" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-10 w-10 bg-gray-100 rounded flex items-center justify-center">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {subcategory.name}
                       </td>
@@ -435,6 +460,34 @@ export default function SubcategoryManagementPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label htmlFor="image" className="block text-sm font-medium text-gray-700">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    id="image"
+                    value={formData.image || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+                    placeholder="https://example.com/images/subcategory.jpg"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter the URL of the subcategory image. Leave empty if no image is available.
+                  </p>
+                  {formData.image && (
+                    <div className="mt-2">
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        className="h-20 w-20 object-cover rounded border border-gray-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <input

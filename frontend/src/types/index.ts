@@ -81,6 +81,7 @@ export interface Subcategory {
   name: string;
   slug: string;
   categoryId: Category | string;
+  image?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -261,6 +262,7 @@ export interface CreateSubcategoryDto {
   name: string;
   slug?: string;
   categoryId: string;
+  image?: string;
   isActive?: boolean;
 }
 

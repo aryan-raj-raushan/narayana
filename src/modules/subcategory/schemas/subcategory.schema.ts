@@ -13,6 +13,9 @@ export class Subcategory extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
   categoryId: Types.ObjectId;
 
+  @Prop({ trim: true })
+  image: string;
+
   @Prop({ default: true })
   isActive: boolean;
 

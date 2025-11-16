@@ -29,6 +29,14 @@ export class UpdateSubcategoryDto {
   categoryId?: string;
 
   @ApiPropertyOptional({
+    description: 'Image URL for the subcategory',
+    example: 'https://example.com/images/subcategory.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  image?: string;
+
+  @ApiPropertyOptional({
     description: 'Whether this subcategory is active',
     example: true,
   })
