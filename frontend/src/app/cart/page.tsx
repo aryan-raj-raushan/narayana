@@ -191,20 +191,20 @@ export default function CartPage() {
                               {item?.product?.discountPrice ? (
                                 <>
                                   <p className="text-lg font-medium text-gray-900">
-                                    ${item.product.discountPrice.toFixed(2)}
+                                    ₹{item.product.discountPrice.toFixed(2)}
                                   </p>
                                   <p className="text-sm text-gray-500 line-through">
-                                    ${item.product.price.toFixed(2)}
+                                    ₹{item.product.price.toFixed(2)}
                                   </p>
                                 </>
                               ) : (
                                 <p className="text-lg font-medium text-gray-900">
-                                  ${item.price.toFixed(2)}
+                                  ₹{item.price.toFixed(2)}
                                 </p>
                               )}
                               {(item.productDiscount > 0 || item.offerDiscount > 0) && (
                                 <p className="text-sm text-green-600">
-                                  Save ${(item.productDiscount + item.offerDiscount).toFixed(2)}
+                                  Save ₹{(item.productDiscount + item.offerDiscount).toFixed(2)}
                                 </p>
                               )}
                             </div>
@@ -233,7 +233,7 @@ export default function CartPage() {
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-medium text-gray-900">
-                                Subtotal: ${item.itemTotal.toFixed(2)}
+                                Subtotal: ₹{item.itemTotal.toFixed(2)}
                               </p>
                               <button
                                 onClick={() => handleRemoveItem(item._id)}
@@ -267,18 +267,18 @@ export default function CartPage() {
                 <div className="mt-6 space-y-4">
                   <div className="flex justify-between">
                     <p className="text-sm text-gray-600">Subtotal ({summary?.itemCount || items.length} items)</p>
-                    <p className="text-sm font-medium text-gray-900">${getSubtotal().toFixed(2)}</p>
+                    <p className="text-sm font-medium text-gray-900">₹{getSubtotal().toFixed(2)}</p>
                   </div>
                   {getTotalDiscount() > 0 && (
                     <div className="flex justify-between">
                       <p className="text-sm text-green-600">Total Discount</p>
-                      <p className="text-sm font-medium text-green-600">-${getTotalDiscount().toFixed(2)}</p>
+                      <p className="text-sm font-medium text-green-600">-₹{getTotalDiscount().toFixed(2)}</p>
                     </div>
                   )}
                   <div className="border-t border-gray-200 pt-4">
                     <div className="flex justify-between">
                       <p className="text-base font-medium text-gray-900">Total</p>
-                      <p className="text-base font-medium text-gray-900">${calculateTotal().toFixed(2)}</p>
+                      <p className="text-base font-medium text-gray-900">₹{calculateTotal().toFixed(2)}</p>
                     </div>
                   </div>
                 </div>

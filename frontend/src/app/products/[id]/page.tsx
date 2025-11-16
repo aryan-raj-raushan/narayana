@@ -338,15 +338,15 @@ export default function ProductDetailPage() {
                 {product.discountPrice ? (
                   <div className="flex items-center gap-4">
                     <span className="text-3xl font-bold text-green-600">
-                      ${product.discountPrice.toFixed(2)}
+                      ₹{product.discountPrice.toFixed(2)}
                     </span>
                     <span className="text-xl text-gray-500 line-through">
-                      ${product.price.toFixed(2)}
+                      ₹{product.price.toFixed(2)}
                     </span>
                   </div>
                 ) : (
                   <span className="text-3xl font-bold text-gray-900">
-                    ${product.price.toFixed(2)}
+                    ₹{product.price.toFixed(2)}
                   </span>
                 )}
               </div>
@@ -553,15 +553,15 @@ export default function ProductDetailPage() {
                         {relatedProduct.discountPrice ? (
                           <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-green-600">
-                              ${relatedProduct.discountPrice.toFixed(2)}
+                              ₹{relatedProduct.discountPrice.toFixed(2)}
                             </span>
                             <span className="text-sm text-gray-500 line-through">
-                              ${relatedProduct.price.toFixed(2)}
+                              ₹{relatedProduct.price.toFixed(2)}
                             </span>
                           </div>
                         ) : (
                           <span className="text-lg font-bold">
-                            ${relatedProduct.price.toFixed(2)}
+                            ₹{relatedProduct.price.toFixed(2)}
                           </span>
                         )}
                       </div>
