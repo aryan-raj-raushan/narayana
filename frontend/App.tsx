@@ -1,14 +1,24 @@
 import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { Provider as ReduxProvider } from 'react-redux';
-import { store } from './src/store/store';
-import RootNavigator from './src/navigation/RootNavigator';
+import { View, Text, StyleSheet } from 'react-native';
 
+// Absolute minimal app - no expo components
 export default function App() {
   return (
-    <ReduxProvider store={store}>
-      <RootNavigator />
-      <StatusBar style="auto" />
-    </ReduxProvider>
+    <View style={styles.container}>
+      <Text style={styles.text}>Minimal Test App</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+});
