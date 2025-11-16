@@ -202,7 +202,7 @@ export default function OrdersPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Total</p>
-                      <p className="text-lg font-bold text-gray-900">${order.totalAmount.toFixed(2)}</p>
+                      <p className="text-lg font-bold text-gray-900">₹{order.totalAmount.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
@@ -238,15 +238,15 @@ export default function OrdersPage() {
                           {item.discountPrice ? (
                             <>
                               <p className="text-sm font-medium text-gray-900">
-                                ${(item.discountPrice * item.quantity).toFixed(2)}
+                                ₹{(item.discountPrice * item.quantity).toFixed(2)}
                               </p>
                               <p className="text-xs text-gray-500 line-through">
-                                ${(item.price * item.quantity).toFixed(2)}
+                                ₹{(item.price * item.quantity).toFixed(2)}
                               </p>
                             </>
                           ) : (
                             <p className="text-sm font-medium text-gray-900">
-                              ${(item.price * item.quantity).toFixed(2)}
+                              ₹{(item.price * item.quantity).toFixed(2)}
                             </p>
                           )}
                         </div>
@@ -260,17 +260,17 @@ export default function OrdersPage() {
                   <div className="flex justify-end space-x-8">
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Subtotal</p>
-                      <p className="text-sm font-medium text-gray-900">${order.subtotal.toFixed(2)}</p>
+                      <p className="text-sm font-medium text-gray-900">₹{order.subtotal.toFixed(2)}</p>
                     </div>
                     {order.discount > 0 && (
                       <div className="text-right">
                         <p className="text-sm text-gray-500">Discount</p>
-                        <p className="text-sm font-medium text-green-600">-${order.discount.toFixed(2)}</p>
+                        <p className="text-sm font-medium text-green-600">-₹{order.discount.toFixed(2)}</p>
                       </div>
                     )}
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Total</p>
-                      <p className="text-lg font-bold text-gray-900">${order.totalAmount.toFixed(2)}</p>
+                      <p className="text-lg font-bold text-gray-900">₹{order.totalAmount.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>

@@ -491,15 +491,15 @@ function ProductsPageContent() {
                             {product.discountPrice ? (
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-semibold text-gray-900">
-                                  ${product.discountPrice.toFixed(2)}
+                                  ₹{product.discountPrice.toFixed(2)}
                                 </span>
                                 <span className="text-xs text-gray-500 line-through">
-                                  ${product.price.toFixed(2)}
+                                  ₹{product.price.toFixed(2)}
                                 </span>
                               </div>
                             ) : (
                               <span className="text-sm font-semibold text-gray-900">
-                                ${product.price.toFixed(2)}
+                                ₹{product.price.toFixed(2)}
                               </span>
                             )}
                           </div>
