@@ -268,19 +268,19 @@ export default function Header() {
             </Link>
 
             {/* Cart */}
-            <Link href="/cart" className="flex items-center space-x-1 p-2 text-gray-700 hover:text-gray-900">
-              <div className="relative">
+            <div className="flex items-center">
+              <Link href="/cart" className="relative p-2 text-gray-700 hover:text-gray-900">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {mounted ? cartCount : 0}
                 </span>
-              </div>
-              <span className="hidden md:inline text-sm font-medium">
+              </Link>
+              <span className="hidden md:inline text-sm font-medium text-gray-700">
                 ₹{mounted && cartSummary?.total ? cartSummary.total.toFixed(2) : '0.00'}
               </span>
-            </Link>
+            </div>
 
             {/* User Menu (Desktop) */}
             {isUser && mounted && (
