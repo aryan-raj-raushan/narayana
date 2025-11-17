@@ -6,18 +6,35 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
+import { useGuestStore } from '@/store/guestStore';
 import { orderApi } from '@/lib/api';
 
 export default function CartPage() {
   const router = useRouter();
   const { items, summary, isLoading, error, fetchCart, updateQuantity, removeFromCart, clearCart, clearError } = useCartStore();
-  const { userType } = useAuthStore();
+  const { userType, user } = useAuthStore();
+  const { guestId, initGuestSession } = useGuestStore();
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [currentGuestId, setCurrentGuestId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+    const initCart = async () => {
+      if (userType === 'user' && user) {
+        // Logged in user - fetch from database
+        fetchCart();
+      } else {
+        // Guest user - fetch from Redis
+        let gId = guestId;
+        if (!gId) {
+          gId = await initGuestSession();
+        }
+        setCurrentGuestId(gId);
+        fetchCart(gId);
+      }
+    };
+    initCart();
+  }, [fetchCart, userType, user, guestId, initGuestSession]);
 
   const calculateTotal = () => {
     if (summary) {
@@ -44,7 +61,8 @@ export default function CartPage() {
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     try {
-      await updateQuantity(itemId, newQuantity);
+      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      await updateQuantity(itemId, newQuantity, gId);
     } catch {
       // Error handled by store
     }
@@ -52,7 +70,8 @@ export default function CartPage() {
 
   const handleRemoveItem = async (itemId: string) => {
     try {
-      await removeFromCart(itemId);
+      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      await removeFromCart(itemId, gId);
     } catch {
       // Error handled by store
     }
@@ -61,7 +80,8 @@ export default function CartPage() {
   const handleClearCart = async () => {
     if (confirm('Are you sure you want to clear your cart?')) {
       try {
-        await clearCart();
+        const gId = userType === 'user' && user ? undefined : currentGuestId;
+        await clearCart(gId);
       } catch {
         // Error handled by store
       }
@@ -69,8 +89,9 @@ export default function CartPage() {
   };
 
   const handleProceedToCheckout = async () => {
-    if (!userType) {
-      router.push('/login');
+    // Guest users should go to guest checkout page
+    if (!(userType === 'user' && user)) {
+      router.push('/checkout/guest');
       return;
     }
 
@@ -88,22 +109,6 @@ export default function CartPage() {
       setIsCreatingOrder(false);
     }
   };
-
-  if (!userType) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please login to view your cart</h2>
-          <Link
-            href="/login"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
