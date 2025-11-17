@@ -58,7 +58,7 @@ export default function CartPage() {
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     try {
-      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      const gId:any = userType === 'user' && user ? undefined : currentGuestId;
       await updateQuantity(itemId, newQuantity, gId);
     } catch {
       // Error handled by store
@@ -67,7 +67,7 @@ export default function CartPage() {
 
   const handleRemoveItem = async (itemId: string) => {
     try {
-      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      const gId:any = userType === 'user' && user ? undefined : currentGuestId;
       await removeFromCart(itemId, gId);
     } catch {
       // Error handled by store

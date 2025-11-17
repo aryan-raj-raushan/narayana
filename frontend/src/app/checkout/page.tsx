@@ -151,7 +151,7 @@ export default function CheckoutPage() {
     try {
       if (isLoggedIn) {
         // Logged in user - create order via orderApi
-        const orderData = {
+        const orderData:any = {
           shippingAddress: {
             address: formData.address,
             city: formData.city,
