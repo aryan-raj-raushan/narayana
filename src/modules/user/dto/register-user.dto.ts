@@ -34,4 +34,12 @@ export class RegisterUserDto {
   @IsOptional()
   @IsPhoneNumber('IN')
   phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Guest session ID for cart/wishlist merge',
+    example: 'guest_abc123',
+  })
+  @IsOptional()
+  @IsString()
+  guestId?: string;
 }

@@ -11,9 +11,9 @@ interface AuthState {
   error: string | null;
 
   // Actions
-  loginAsUser: (email: string, password: string) => Promise<void>;
+  loginAsUser: (email: string, password: string, guestId?: string | null) => Promise<void>;
   loginAsAdmin: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, phone?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phone?: string, guestId?: string | null) => Promise<void>;
   logout: () => void;
   loadFromStorage: () => void;
   clearError: () => void;
@@ -27,15 +27,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   error: null,
 
-  loginAsUser: async (email: string, password: string) => {
+  loginAsUser: async (email: string, password: string, guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authApi.userLogin({ email, password });
+      const loginData: { email: string; password: string; guestId?: string } = { email, password };
+      if (guestId) {
+        loginData.guestId = guestId;
+      }
+
+      const response = await authApi.userLogin(loginData);
       const { accessToken, user } = response.data;
 
       localStorage.setItem('token', accessToken);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('userType', 'user');
+
+      // Clear guest session after successful login (cart/wishlist merged on backend)
+      if (guestId) {
+        localStorage.removeItem('guestId');
+      }
 
       set({
         token: accessToken,
@@ -81,15 +91,28 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (name: string, email: string, password: string, phone?: string) => {
+  register: async (name: string, email: string, password: string, phone?: string, guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authApi.userRegister({ name, email, password, phone });
+      const registerData: { name: string; email: string; password: string; phone?: string; guestId?: string } = {
+        name,
+        email,
+        password,
+      };
+      if (phone) registerData.phone = phone;
+      if (guestId) registerData.guestId = guestId;
+
+      const response = await authApi.userRegister(registerData);
       const { accessToken, user } = response.data;
 
       localStorage.setItem('token', accessToken);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('userType', 'user');
+
+      // Clear guest session after successful registration (cart/wishlist merged on backend)
+      if (guestId) {
+        localStorage.removeItem('guestId');
+      }
 
       set({
         token: accessToken,

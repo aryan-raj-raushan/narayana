@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { CartItem, CartSummary } from '@/types';
-import { cartApi } from '@/lib/api';
+import { cartApi, guestApi } from '@/lib/api';
 
 interface CartState {
   items: CartItem[];
@@ -10,13 +10,14 @@ interface CartState {
   error: string | null;
 
   // Actions
-  fetchCart: () => Promise<void>;
-  fetchCount: () => Promise<void>;
-  addToCart: (productId: string, quantity?: number) => Promise<void>;
-  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
-  removeFromCart: (itemId: string) => Promise<void>;
-  clearCart: () => Promise<void>;
+  fetchCart: (guestId?: string | null) => Promise<void>;
+  fetchCount: (guestId?: string | null) => Promise<void>;
+  addToCart: (productId: string, quantity?: number, guestId?: string | null) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number, productId?: string, guestId?: string | null) => Promise<void>;
+  removeFromCart: (itemId: string, productId?: string, guestId?: string | null) => Promise<void>;
+  clearCart: (guestId?: string | null) => Promise<void>;
   clearError: () => void;
+  resetCart: () => void;
 }
 
 export const useCartStore = create<CartState>((set) => ({
@@ -26,10 +27,15 @@ export const useCartStore = create<CartState>((set) => ({
   isLoading: false,
   error: null,
 
-  fetchCart: async () => {
+  fetchCart: async (guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await cartApi.get();
+      let response;
+      if (guestId) {
+        response = await guestApi.getCart(guestId);
+      } else {
+        response = await cartApi.get();
+      }
       const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
       const summary = response.data?.summary || null;
       set({ items, summary, isLoading: false });
@@ -42,29 +48,48 @@ export const useCartStore = create<CartState>((set) => ({
     }
   },
 
-  fetchCount: async () => {
+  fetchCount: async (guestId?: string | null) => {
     try {
-      const response = await cartApi.getCount();
+      let response;
+      if (guestId) {
+        response = await guestApi.getCartCount(guestId);
+      } else {
+        response = await cartApi.getCount();
+      }
       set({ count: response.data.count || 0 });
     } catch {
       // Silently fail for count
     }
   },
 
-  addToCart: async (productId: string, quantity: number = 1) => {
+  addToCart: async (productId: string, quantity: number = 1, guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      await cartApi.add({ productId, quantity });
-      const response = await cartApi.get();
-      const countResponse = await cartApi.getCount();
-      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
-      const summary = response.data?.summary || null;
-      set({
-        items,
-        summary,
-        count: countResponse.data.count || 0,
-        isLoading: false
-      });
+      if (guestId) {
+        await guestApi.addToCart({ guestId, productId, quantity });
+        const response = await guestApi.getCart(guestId);
+        const countResponse = await guestApi.getCartCount(guestId);
+        const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+        const summary = response.data?.summary || null;
+        set({
+          items,
+          summary,
+          count: countResponse.data.count || 0,
+          isLoading: false
+        });
+      } else {
+        await cartApi.add({ productId, quantity });
+        const response = await cartApi.get();
+        const countResponse = await cartApi.getCount();
+        const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+        const summary = response.data?.summary || null;
+        set({
+          items,
+          summary,
+          count: countResponse.data.count || 0,
+          isLoading: false
+        });
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({
@@ -75,14 +100,22 @@ export const useCartStore = create<CartState>((set) => ({
     }
   },
 
-  updateQuantity: async (itemId: string, quantity: number) => {
+  updateQuantity: async (itemId: string, quantity: number, productId?: string, guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      await cartApi.update(itemId, quantity);
-      const response = await cartApi.get();
-      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
-      const summary = response.data?.summary || null;
-      set({ items, summary, isLoading: false });
+      if (guestId && productId) {
+        await guestApi.updateCartItem({ guestId, productId, quantity });
+        const response = await guestApi.getCart(guestId);
+        const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+        const summary = response.data?.summary || null;
+        set({ items, summary, isLoading: false });
+      } else {
+        await cartApi.update(itemId, quantity);
+        const response = await cartApi.get();
+        const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+        const summary = response.data?.summary || null;
+        set({ items, summary, isLoading: false });
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({
@@ -93,20 +126,34 @@ export const useCartStore = create<CartState>((set) => ({
     }
   },
 
-  removeFromCart: async (itemId: string) => {
+  removeFromCart: async (itemId: string, productId?: string, guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      await cartApi.remove(itemId);
-      const response = await cartApi.get();
-      const countResponse = await cartApi.getCount();
-      const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
-      const summary = response.data?.summary || null;
-      set({
-        items,
-        summary,
-        count: countResponse.data.count || 0,
-        isLoading: false
-      });
+      if (guestId && productId) {
+        await guestApi.removeFromCart(guestId, productId);
+        const response = await guestApi.getCart(guestId);
+        const countResponse = await guestApi.getCartCount(guestId);
+        const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+        const summary = response.data?.summary || null;
+        set({
+          items,
+          summary,
+          count: countResponse.data.count || 0,
+          isLoading: false
+        });
+      } else {
+        await cartApi.remove(itemId);
+        const response = await cartApi.get();
+        const countResponse = await cartApi.getCount();
+        const items = Array.isArray(response.data) ? response.data : (response.data?.items || []);
+        const summary = response.data?.summary || null;
+        set({
+          items,
+          summary,
+          count: countResponse.data.count || 0,
+          isLoading: false
+        });
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({
@@ -117,10 +164,14 @@ export const useCartStore = create<CartState>((set) => ({
     }
   },
 
-  clearCart: async () => {
+  clearCart: async (guestId?: string | null) => {
     set({ isLoading: true, error: null });
     try {
-      await cartApi.clear();
+      if (guestId) {
+        await guestApi.clearCart(guestId);
+      } else {
+        await cartApi.clear();
+      }
       set({ items: [], summary: null, count: 0, isLoading: false });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -133,4 +184,6 @@ export const useCartStore = create<CartState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  resetCart: () => set({ items: [], summary: null, count: 0, error: null }),
 }));
