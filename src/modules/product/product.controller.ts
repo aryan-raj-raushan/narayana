@@ -70,6 +70,7 @@ export class ProductController {
   @ApiQuery({ name: 'isActive', required: false, description: 'Filter by active status', enum: ['true', 'false'] })
   @ApiQuery({ name: 'search', required: false, description: 'Search term for product name or description' })
   @ApiQuery({ name: 'familySKU', required: false, description: 'Filter by family SKU' })
+  @ApiQuery({ name: 'productIds', required: false, description: 'Comma-separated list of product IDs to filter by' })
   @ApiResponse({
     status: 200,
     description: 'Products retrieved successfully',
@@ -87,6 +88,7 @@ export class ProductController {
     @Query('isActive') isActive?: string,
     @Query('search') search?: string,
     @Query('familySKU') familySKU?: string,
+    @Query('productIds') productIds?: string,
   ) {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
@@ -103,6 +105,7 @@ export class ProductController {
     if (isActive === 'false') filters.isActive = false;
     if (search) filters.search = search;
     if (familySKU) filters.familySKU = familySKU;
+    if (productIds) filters.productIds = productIds.split(',').filter(id => id.trim());
 
     return this.productService.findAll(pageNum, limitNum, filters);
   }

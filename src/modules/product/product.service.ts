@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,17 +13,35 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { GenderService } from '../gender/gender.service';
 import { CategoryService } from '../category/category.service';
 import { SubcategoryService } from '../subcategory/subcategory.service';
+import { RedisService } from '../../database/redis.service';
 import { generateSKU } from '../../common/utils/sku.util';
 
 @Injectable()
 export class ProductService {
+  private readonly logger = new Logger(ProductService.name);
+  private readonly CACHE_PREFIX = 'product:';
+  private readonly CACHE_TTL = 1800; // 30 minutes for products
+
   constructor(
     @InjectModel(Product.name)
     private productModel: Model<Product>,
     private genderService: GenderService,
     private categoryService: CategoryService,
     private subcategoryService: SubcategoryService,
+    private redisService: RedisService,
   ) {}
+
+  private async invalidateCache(): Promise<void> {
+    try {
+      const keys = await this.redisService.keys(`${this.CACHE_PREFIX}*`);
+      for (const key of keys) {
+        await this.redisService.del(key);
+      }
+      this.logger.log('Product cache invalidated');
+    } catch (error) {
+      this.logger.error('Failed to invalidate cache:', error);
+    }
+  }
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
     // Validate relationships exist
@@ -65,7 +84,9 @@ export class ProductService {
       relatedProductIds: createProductDto.relatedProductIds?.map((id) => new Types.ObjectId(id)),
     });
 
-    return product.save();
+    const savedProduct = await product.save();
+    await this.invalidateCache();
+    return savedProduct;
   }
 
   async findAll(
@@ -82,8 +103,23 @@ export class ProductService {
       isActive?: boolean;
       search?: string;
       familySKU?: string;
+      productIds?: string[]; // Filter by specific product IDs
     },
   ): Promise<any> {
+    // Generate cache key based on all parameters
+    const cacheKey = `${this.CACHE_PREFIX}all:${page}:${limit}:${JSON.stringify(filters || {})}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for products query`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     const skip = (page - 1) * limit;
     const filter: any = {};
 
@@ -116,14 +152,24 @@ export class ProductService {
       filter.isActive = filters.isActive;
     }
     if (filters?.search) {
+      // Implement fuzzy search
+      const searchTerm = filters.search.trim();
+      const fuzzyRegex = this.createFuzzyRegex(searchTerm);
+
       filter.$or = [
-        { name: { $regex: filters.search, $options: 'i' } },
-        { sku: { $regex: filters.search, $options: 'i' } },
-        { description: { $regex: filters.search, $options: 'i' } },
+        { name: { $regex: fuzzyRegex, $options: 'i' } },
+        { sku: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: fuzzyRegex, $options: 'i' } },
+        // Also search with exact match for better results
+        { name: { $regex: searchTerm, $options: 'i' } },
       ];
     }
     if (filters?.familySKU) {
       filter.familySKU = filters.familySKU.toUpperCase();
+    }
+    // Filter by specific product IDs (for offers)
+    if (filters?.productIds && filters.productIds.length > 0) {
+      filter._id = { $in: filters.productIds.map(id => new Types.ObjectId(id)) };
     }
 
     const [data, total] = await Promise.all([
@@ -139,7 +185,7 @@ export class ProductService {
       this.productModel.countDocuments(filter),
     ]);
 
-    return {
+    const result = {
       data,
       pagination: {
         total,
@@ -148,9 +194,32 @@ export class ProductService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(result), this.CACHE_TTL);
+      this.logger.log(`Cached products query`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
+    return result;
   }
 
   async findOne(id: string): Promise<Product> {
+    const cacheKey = `${this.CACHE_PREFIX}id:${id}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for product ${id}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     const product = await this.productModel
       .findById(id)
       .populate('genderId', 'name slug')
@@ -161,6 +230,14 @@ export class ProductService {
 
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(product), this.CACHE_TTL);
+      this.logger.log(`Cached product ${id}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
     }
 
     return product;
@@ -240,12 +317,15 @@ export class ProductService {
     }
 
     Object.assign(product, updateProductDto);
-    return product.save();
+    const savedProduct = await product.save();
+    await this.invalidateCache();
+    return savedProduct;
   }
 
   async remove(id: string): Promise<{ message: string }> {
     const product = await this.findOne(id);
     await product.deleteOne();
+    await this.invalidateCache();
     return { message: `Product ${product.name} (SKU: ${product.sku}) has been deleted successfully` };
   }
 
@@ -257,7 +337,9 @@ export class ProductService {
     }
 
     product.stock += quantity;
-    return product.save();
+    const savedProduct = await product.save();
+    await this.invalidateCache();
+    return savedProduct;
   }
 
   private async generateUniqueSKU(genderName: string, categoryName: string): Promise<string> {
@@ -291,25 +373,71 @@ export class ProductService {
   }
 
   async getProductsByCategory(categoryId: string): Promise<Product[]> {
+    const cacheKey = `${this.CACHE_PREFIX}category:${categoryId}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for products by category ${categoryId}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     await this.categoryService.findOne(categoryId);
-    return this.productModel
+    const products = await this.productModel
       .find({ categoryId: new Types.ObjectId(categoryId), isActive: true })
       .populate('genderId', 'name slug')
       .populate('categoryId', 'name slug')
       .populate('subcategoryId', 'name slug')
       .sort({ name: 1 })
       .exec();
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(products), this.CACHE_TTL);
+      this.logger.log(`Cached products by category ${categoryId}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
+    return products;
   }
 
   async getProductsBySubcategory(subcategoryId: string): Promise<Product[]> {
+    const cacheKey = `${this.CACHE_PREFIX}subcategory:${subcategoryId}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for products by subcategory ${subcategoryId}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     await this.subcategoryService.findOne(subcategoryId);
-    return this.productModel
+    const products = await this.productModel
       .find({ subcategoryId: new Types.ObjectId(subcategoryId), isActive: true })
       .populate('genderId', 'name slug')
       .populate('categoryId', 'name slug')
       .populate('subcategoryId', 'name slug')
       .sort({ name: 1 })
       .exec();
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(products), this.CACHE_TTL);
+      this.logger.log(`Cached products by subcategory ${subcategoryId}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
+    return products;
   }
 
   async autosuggest(query: string, limit: number = 10): Promise<any> {
@@ -369,7 +497,20 @@ export class ProductService {
   }
 
   async getFeaturedProducts(limit: number = 12): Promise<Product[]> {
-    return this.productModel
+    const cacheKey = `${this.CACHE_PREFIX}featured:${limit}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for featured products`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
+    const products = await this.productModel
       .find({
         isActive: true,
         stock: { $gt: 0 },
@@ -380,5 +521,40 @@ export class ProductService {
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(products), this.CACHE_TTL);
+      this.logger.log(`Cached featured products`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
+    return products;
+  }
+
+  /**
+   * Creates a fuzzy regex pattern for search
+   * Allows for typos and partial matches
+   * e.g., "way" matches "sway", "wayward", etc.
+   * e.g., "shrt" matches "shirt"
+   */
+  private createFuzzyRegex(searchTerm: string): string {
+    // Split search term into words
+    const words = searchTerm.toLowerCase().split(/\s+/);
+
+    // Create patterns for each word
+    const patterns = words.map(word => {
+      // Allow any characters between each letter (fuzzy matching)
+      // This helps with typos like "shrt" matching "shirt"
+      const chars = word.split('');
+      const fuzzyPattern = chars.join('.*?');
+
+      // Also create a pattern that allows the word to be part of a larger word
+      return `(${fuzzyPattern}|${word})`;
+    });
+
+    // Combine patterns - all words must match somewhere
+    return patterns.join('.*');
   }
 }

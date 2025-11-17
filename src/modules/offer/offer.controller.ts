@@ -89,6 +89,32 @@ export class OfferController {
     return this.offerService.getActiveOffers();
   }
 
+  @Get('homepage')
+  @ApiOperation({
+    summary: 'Get homepage offers',
+    description: 'Retrieves offers to be displayed on the homepage',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Homepage offers retrieved successfully',
+  })
+  async getHomepageOffers() {
+    return this.offerService.getHomepageOffers();
+  }
+
+  @Get('navbar')
+  @ApiOperation({
+    summary: 'Get navbar offers',
+    description: 'Retrieves offers to be displayed in the navigation bar dropdown',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Navbar offers retrieved successfully',
+  })
+  async getNavbarOffers() {
+    return this.offerService.getNavbarOffers();
+  }
+
   @Get('product/:productId')
   @ApiOperation({
     summary: 'Get offers for product',

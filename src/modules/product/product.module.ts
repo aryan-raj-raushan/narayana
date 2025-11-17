@@ -6,6 +6,7 @@ import { Product, ProductSchema } from './schemas/product.schema';
 import { GenderModule } from '../gender/gender.module';
 import { CategoryModule } from '../category/category.module';
 import { SubcategoryModule } from '../subcategory/subcategory.module';
+import { DatabaseModule } from '../../database/database.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SubcategoryModule } from '../subcategory/subcategory.module';
     GenderModule,
     CategoryModule,
     SubcategoryModule,
+    DatabaseModule,
   ],
   controllers: [ProductController],
   providers: [ProductService],

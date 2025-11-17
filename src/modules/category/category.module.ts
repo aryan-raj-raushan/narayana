@@ -5,12 +5,14 @@ import { CategoryController } from './category.controller';
 import { Category, CategorySchema } from './schemas/category.schema';
 import { GenderModule } from '../gender/gender.module';
 import { SubcategoryModule } from '../subcategory/subcategory.module';
+import { DatabaseModule } from '../../database/database.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Category.name, schema: CategorySchema }]),
     forwardRef(() => GenderModule),
     forwardRef(() => SubcategoryModule),
+    DatabaseModule,
   ],
   controllers: [CategoryController],
   providers: [CategoryService],

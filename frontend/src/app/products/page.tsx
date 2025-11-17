@@ -1,22 +1,36 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { productApi, genderApi, categoryApi, subcategoryApi } from '@/lib/api';
-import { Product, Gender, Category, Subcategory, PaginatedResponse } from '@/types';
+import { productApi } from '@/lib/api';
+import { Product, Category, Subcategory, PaginatedResponse } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuthStore } from '@/store/authStore';
+import { useDataStore } from '@/store/dataStore';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
+import SearchDropdown from '@/components/common/SearchDropdown';
 
 function ProductsPageContent() {
   const searchParams = useSearchParams();
   const { userType } = useAuthStore();
   const { addToCart } = useCartStore();
   const { addToWishlist } = useWishlistStore();
+
+  // Use shared data store
+  const {
+    genders,
+    allSubcategories: globalSubcategories,
+    categoriesByGender,
+    subcategoriesByCategory,
+    fetchGenders,
+    fetchAllSubcategories,
+    fetchCategoriesByGender,
+    fetchSubcategoriesByCategory,
+  } = useDataStore();
 
   // Products state
   const [products, setProducts] = useState<Product[]>([]);
@@ -27,22 +41,38 @@ function ProductsPageContent() {
     totalPages: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false); // For non-blocking refresh
   const [error, setError] = useState<string | null>(null);
 
-  // Filter options
-  const [genders, setGenders] = useState<Gender[]>([]);
+  // Local filter options (derived from global store)
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
 
-  // Filter state
+  // Filter state - use refs to prevent excessive re-renders
   const [selectedGender, setSelectedGender] = useState<string>(
     searchParams.get('genderId') || ''
   );
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
-  const [minPrice, setMinPrice] = useState<string>('');
-  const [maxPrice, setMaxPrice] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    searchParams.get('categoryId') || ''
+  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>(
+    searchParams.get('subcategoryId') || ''
+  );
+  const [minPrice, setMinPrice] = useState<string>(
+    searchParams.get('minPrice') || ''
+  );
+  const [maxPrice, setMaxPrice] = useState<string>(
+    searchParams.get('maxPrice') || ''
+  );
+  const [searchQuery, setSearchQuery] = useState<string>(
+    searchParams.get('search') || ''
+  );
+  const [currentOfferId, setCurrentOfferId] = useState<string>(
+    searchParams.get('offerId') || ''
+  );
+  const [productIdsFilter, setProductIdsFilter] = useState<string>(
+    searchParams.get('productIds') || ''
+  );
   const [currentPage, setCurrentPage] = useState(1);
 
   // Mobile filter toggle
@@ -52,87 +82,154 @@ function ProductsPageContent() {
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [addingToWishlist, setAddingToWishlist] = useState<string | null>(null);
 
-  // Fetch filter options
+  // Refs to prevent flickering
+  const initialLoadDone = useRef(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchParams = useRef<string>('');
+  const hasProductsRef = useRef(false);
+
+  // Search dropdown state
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
+  // Sync state with URL params when they change (for client-side navigation)
+  useEffect(() => {
+    const newProductIds = searchParams.get('productIds') || '';
+    const newOfferId = searchParams.get('offerId') || '';
+    const newGenderId = searchParams.get('genderId') || '';
+    const newCategoryId = searchParams.get('categoryId') || '';
+    const newSubcategoryId = searchParams.get('subcategoryId') || '';
+    const newMinPrice = searchParams.get('minPrice') || '';
+    const newMaxPrice = searchParams.get('maxPrice') || '';
+    const newSearch = searchParams.get('search') || '';
+
+    // Force refetch by clearing the cache
+    lastFetchParams.current = '';
+
+    // Update all state from URL params
+    setProductIdsFilter(newProductIds);
+    setCurrentOfferId(newOfferId);
+    setSelectedGender(newGenderId);
+    setSelectedCategory(newCategoryId);
+    setSelectedSubcategory(newSubcategoryId);
+    setMinPrice(newMinPrice);
+    setMaxPrice(newMaxPrice);
+    setSearchQuery(newSearch);
+
+    // Reset to page 1 when URL changes
+    setCurrentPage(1);
+  }, [searchParams]);
+
+  // Fetch filter options ONCE on mount from shared store
   useEffect(() => {
     const fetchFilterOptions = async () => {
       try {
-        const [gendersRes] = await Promise.all([
-          genderApi.getAll({ isActive: true }),
+        // Use shared store (cached)
+        const [, allSubs] = await Promise.all([
+          fetchGenders(),
+          fetchAllSubcategories(),
         ]);
-        setGenders(gendersRes.data.data || gendersRes.data || []);
+
+        // If subcategoryId is in URL, resolve the hierarchy
+        const urlSubcategoryId = searchParams.get('subcategoryId');
+        const urlCategoryId = searchParams.get('categoryId');
+        const urlGenderId = searchParams.get('genderId');
+
+        if (urlSubcategoryId && allSubs) {
+          const subcategory = allSubs.find((s: Subcategory) => s._id === urlSubcategoryId);
+          if (subcategory && subcategory.categoryId) {
+            const categoryData = typeof subcategory.categoryId === 'object' ? subcategory.categoryId : null;
+            if (categoryData) {
+              const genderData = typeof categoryData.genderId === 'object' ? categoryData.genderId : null;
+              if (genderData && !urlGenderId) {
+                setSelectedGender(genderData._id);
+              }
+              if (!urlCategoryId) {
+                setSelectedCategory(categoryData._id);
+              }
+            }
+          }
+        }
+
+        initialLoadDone.current = true;
       } catch (err) {
         console.error('Failed to fetch filter options:', err);
+        initialLoadDone.current = true;
       }
     };
 
     fetchFilterOptions();
-  }, []);
+  }, [fetchGenders, fetchAllSubcategories, searchParams]); // Only run once on mount
 
-  // Fetch categories when gender changes
+  // Fetch categories when gender changes (from shared cache)
   useEffect(() => {
+    if (!initialLoadDone.current) return;
+
     const fetchCategories = async () => {
       if (selectedGender) {
-        try {
-          const response = await categoryApi.getByGender(selectedGender);
-          setCategories(response.data || []);
-          setSelectedCategory('');
-          setSelectedSubcategory('');
-        } catch (err) {
-          console.error('Failed to fetch categories:', err);
-        }
+        const cats = await fetchCategoriesByGender(selectedGender);
+        setCategories(cats);
       } else {
         setCategories([]);
-        setSelectedCategory('');
-        setSelectedSubcategory('');
       }
     };
 
     fetchCategories();
-  }, [selectedGender]);
+  }, [selectedGender, fetchCategoriesByGender]);
 
-  // Fetch subcategories when category changes
+  // Fetch subcategories when category changes (from shared cache)
   useEffect(() => {
-    const fetchSubcategories = async () => {
+    if (!initialLoadDone.current) return;
+
+    const fetchSubcats = async () => {
       if (selectedCategory) {
-        try {
-          const response = await subcategoryApi.getByCategory(selectedCategory);
-          setSubcategories(response.data || []);
-          setSelectedSubcategory('');
-        } catch (err) {
-          console.error('Failed to fetch subcategories:', err);
-        }
+        const subs = await fetchSubcategoriesByCategory(selectedCategory);
+        setSubcategories(subs);
       } else {
         setSubcategories([]);
-        setSelectedSubcategory('');
       }
     };
 
-    fetchSubcategories();
-  }, [selectedCategory]);
+    fetchSubcats();
+  }, [selectedCategory, fetchSubcategoriesByCategory]);
 
-  // Fetch products
+  // Debounced product fetch to prevent flickering
   const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
+    const params: Record<string, unknown> = {
+      page: currentPage,
+      limit: pagination.limit,
+      isActive: true,
+    };
+
+    if (selectedGender) params.genderId = selectedGender;
+    if (selectedCategory) params.categoryId = selectedCategory;
+    if (selectedSubcategory) params.subcategoryId = selectedSubcategory;
+    if (minPrice) params.minPrice = Number(minPrice);
+    if (maxPrice) params.maxPrice = Number(maxPrice);
+    if (searchQuery) params.search = searchQuery;
+    if (productIdsFilter) params.productIds = productIdsFilter;
+
+    // Create a hash of current params to avoid duplicate fetches
+    const paramsHash = JSON.stringify(params);
+    if (paramsHash === lastFetchParams.current) {
+      return; // Skip if same params
+    }
+
+    // Use refreshing state if we already have products (prevents flicker)
+    if (hasProductsRef.current) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
-      const params: Record<string, unknown> = {
-        page: currentPage,
-        limit: pagination.limit,
-        isActive: true,
-      };
-
-      if (selectedGender) params.genderId = selectedGender;
-      if (selectedCategory) params.categoryId = selectedCategory;
-      if (selectedSubcategory) params.subcategoryId = selectedSubcategory;
-      if (minPrice) params.minPrice = Number(minPrice);
-      if (maxPrice) params.maxPrice = Number(maxPrice);
-      if (searchQuery) params.search = searchQuery;
-
       const response = await productApi.getAll(params);
       const data = response.data as PaginatedResponse<Product>;
 
-      setProducts(data.data || []);
+      lastFetchParams.current = paramsHash;
+      const newProducts = data.data || [];
+      setProducts(newProducts);
+      hasProductsRef.current = newProducts.length > 0;
       setPagination(data.pagination || {
         total: 0,
         page: 1,
@@ -144,6 +241,7 @@ function ProductsPageContent() {
       setError('Failed to load products. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, [
     currentPage,
@@ -154,10 +252,24 @@ function ProductsPageContent() {
     minPrice,
     maxPrice,
     searchQuery,
+    productIdsFilter,
   ]);
 
+  // Debounce product fetching to prevent flickering
   useEffect(() => {
-    fetchProducts();
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchProducts();
+    }, 150); // Slightly longer delay to batch state updates
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
   }, [fetchProducts]);
 
   const handleAddToCart = async (productId: string) => {
@@ -227,20 +339,51 @@ function ProductsPageContent() {
           </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="mb-6">
+          <div className="mb-6 relative">
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="flex-grow px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 text-sm"
-              />
-              <button type="submit" className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors">
+              <div className="flex-grow relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowSearchDropdown(true)}
+                  placeholder="Search products..."
+                  className="w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-md text-sm"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="px-6 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
+              >
                 Search
               </button>
             </div>
-          </form>
+
+            {/* Search Dropdown - No duplicate input, matches parent width */}
+            <SearchDropdown
+              isOpen={showSearchDropdown}
+              onClose={() => setShowSearchDropdown(false)}
+              align="left"
+              showInput={false}
+              fullWidth={true}
+              externalQuery={searchQuery}
+              onExternalQueryChange={setSearchQuery}
+            />
+          </div>
 
           {/* Mobile Filter Toggle */}
           <button
@@ -258,7 +401,7 @@ function ProductsPageContent() {
             <aside
               className={`${
                 showFilters ? 'block' : 'hidden'
-              } md:block w-full md:w-56 flex-shrink-0`}
+              } md:block w-full md:w-64 flex-shrink-0`}
             >
               <div className="bg-white border border-gray-200 rounded-lg p-5 sticky top-24">
                 <div className="flex justify-between items-center mb-5">
@@ -271,12 +414,64 @@ function ProductsPageContent() {
                   </button>
                 </div>
 
+                {/* Quick Subcategory Filter - Like Zara */}
+                {globalSubcategories.length > 0 && (
+                  <div className="mb-5 pb-5 border-b border-gray-200">
+                    <label className="block text-xs font-semibold text-gray-900 mb-3 uppercase">Quick Filter</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedSubcategory('');
+                          setSelectedCategory('');
+                          setSelectedGender('');
+                          setCurrentPage(1);
+                        }}
+                        className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                          !selectedSubcategory
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-900'
+                        }`}
+                      >
+                        All
+                      </button>
+                      {globalSubcategories.slice(0, 12).map((sub) => (
+                        <button
+                          key={sub._id}
+                          onClick={() => {
+                            setSelectedSubcategory(sub._id);
+                            // Auto-resolve hierarchy
+                            if (sub.categoryId && typeof sub.categoryId === 'object') {
+                              setSelectedCategory(sub.categoryId._id);
+                              if (sub.categoryId.genderId && typeof sub.categoryId.genderId === 'object') {
+                                setSelectedGender(sub.categoryId.genderId._id);
+                              }
+                            }
+                            setCurrentPage(1);
+                          }}
+                          className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                            selectedSubcategory === sub._id
+                              ? 'bg-gray-900 text-white border-gray-900'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-gray-900'
+                          }`}
+                        >
+                          {sub.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Gender Filter */}
                 <div className="mb-4">
                   <label className="block text-xs font-medium text-gray-700 mb-2">Gender</label>
                   <select
                     value={selectedGender}
-                    onChange={(e) => setSelectedGender(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedGender(e.target.value);
+                      setSelectedCategory('');
+                      setSelectedSubcategory('');
+                      setCurrentPage(1);
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                   >
                     <option value="">All</option>
@@ -294,7 +489,11 @@ function ProductsPageContent() {
                     <label className="block text-xs font-medium text-gray-700 mb-2">Category</label>
                     <select
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedCategory(e.target.value);
+                        setSelectedSubcategory('');
+                        setCurrentPage(1);
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                     >
                       <option value="">All</option>
@@ -313,7 +512,10 @@ function ProductsPageContent() {
                     <label className="block text-xs font-medium text-gray-700 mb-2">Subcategory</label>
                     <select
                       value={selectedSubcategory}
-                      onChange={(e) => setSelectedSubcategory(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedSubcategory(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                     >
                       <option value="">All</option>
@@ -363,7 +565,19 @@ function ProductsPageContent() {
 
             {/* Products Grid */}
             <div className="flex-grow">
-              {isLoading ? (
+              {/* Refreshing indicator */}
+              {isRefreshing && (
+                <div className="mb-4 flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-gray-600 text-sm">
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Updating...
+                  </div>
+                </div>
+              )}
+              {isLoading && products.length === 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {[...Array(8)].map((_, i) => (
                     <div key={i} className="animate-pulse">
@@ -412,7 +626,7 @@ function ProductsPageContent() {
                     Showing {products.length} of {pagination.total} products
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 transition-opacity duration-200 ${isRefreshing ? 'opacity-60' : 'opacity-100'}`}>
                     {products.map((product) => (
                       <div key={product._id} className="group">
                         {/* Product Image */}

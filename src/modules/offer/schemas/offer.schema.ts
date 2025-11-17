@@ -66,6 +66,28 @@ export class Offer extends Document {
   @Prop({ default: 1 })
   priority: number;
 
+  // Homepage display fields
+  @Prop()
+  image: string; // URL for offer image
+
+  @Prop()
+  homepageTitle: string; // e.g., "Under ₹500 Shirts"
+
+  @Prop()
+  homepageSubtitle: string; // e.g., "Under" or "BUY 3"
+
+  @Prop()
+  homepagePrice: string; // e.g., "₹500" or "₹3000"
+
+  @Prop()
+  homepageCategory: string; // e.g., "Shirts" or "T-Shirts"
+
+  @Prop({ default: false })
+  displayOnHomepage: boolean;
+
+  @Prop({ default: false })
+  displayInNavbar: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }

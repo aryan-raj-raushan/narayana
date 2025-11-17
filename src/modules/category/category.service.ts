@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Category } from './schemas/category.schema';
@@ -6,10 +6,15 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { GenderService } from '../gender/gender.service';
 import { SubcategoryService } from '../subcategory/subcategory.service';
+import { RedisService } from '../../database/redis.service';
 import { generateSlug } from '../../common/utils/slug.util';
 
 @Injectable()
 export class CategoryService {
+  private readonly logger = new Logger(CategoryService.name);
+  private readonly CACHE_PREFIX = 'category:';
+  private readonly CACHE_TTL = 3600; // 1 hour
+
   constructor(
     @InjectModel(Category.name)
     private categoryModel: Model<Category>,
@@ -17,6 +22,7 @@ export class CategoryService {
     private genderService: GenderService,
     @Inject(forwardRef(() => SubcategoryService))
     private subcategoryService: SubcategoryService,
+    private redisService: RedisService,
   ) {}
 
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
@@ -50,10 +56,40 @@ export class CategoryService {
       genderId: new Types.ObjectId(createCategoryDto.genderId),
     });
 
-    return category.save();
+    const savedCategory = await category.save();
+
+    // Invalidate cache
+    await this.invalidateCache();
+
+    return savedCategory;
+  }
+
+  private async invalidateCache(): Promise<void> {
+    try {
+      const keys = await this.redisService.keys(`${this.CACHE_PREFIX}*`);
+      for (const key of keys) {
+        await this.redisService.del(key);
+      }
+      this.logger.log('Category cache invalidated');
+    } catch (error) {
+      this.logger.error('Failed to invalidate cache:', error);
+    }
   }
 
   async findAll(page: number = 1, limit: number = 10, genderId?: string, isActive?: boolean): Promise<any> {
+    const cacheKey = `${this.CACHE_PREFIX}all:${page}:${limit}:${genderId || 'all'}:${isActive !== undefined ? isActive : 'all'}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for ${cacheKey}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     const skip = (page - 1) * limit;
     const filter: any = {};
 
@@ -76,7 +112,7 @@ export class CategoryService {
       this.categoryModel.countDocuments(filter),
     ]);
 
-    return {
+    const result = {
       data,
       pagination: {
         total,
@@ -85,9 +121,32 @@ export class CategoryService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(result), this.CACHE_TTL);
+      this.logger.log(`Cached ${cacheKey}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
+    return result;
   }
 
   async findOne(id: string): Promise<Category> {
+    const cacheKey = `${this.CACHE_PREFIX}id:${id}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for ${cacheKey}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     const category = await this.categoryModel
       .findById(id)
       .populate('genderId', 'name slug')
@@ -95,10 +154,32 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(category), this.CACHE_TTL);
+      this.logger.log(`Cached ${cacheKey}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
     return category;
   }
 
   async findBySlug(slug: string, genderId?: string): Promise<Category> {
+    const cacheKey = `${this.CACHE_PREFIX}slug:${slug}:${genderId || 'all'}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for ${cacheKey}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     const filter: any = { slug };
     if (genderId) {
       filter.genderId = new Types.ObjectId(genderId);
@@ -111,17 +192,49 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Category with slug ${slug} not found`);
     }
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(category), this.CACHE_TTL);
+      this.logger.log(`Cached ${cacheKey}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
     return category;
   }
 
   async findByGender(genderId: string): Promise<Category[]> {
+    const cacheKey = `${this.CACHE_PREFIX}gender:${genderId}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for ${cacheKey}`);
+        return JSON.parse(cached);
+      }
+    } catch (error) {
+      this.logger.error('Cache read error:', error);
+    }
+
     // Validate gender exists
     await this.genderService.findOne(genderId);
 
-    return this.categoryModel
+    const categories = await this.categoryModel
       .find({ genderId: new Types.ObjectId(genderId), isActive: true })
       .sort({ name: 1 })
       .exec();
+
+    // Cache the result
+    try {
+      await this.redisService.set(cacheKey, JSON.stringify(categories), this.CACHE_TTL);
+      this.logger.log(`Cached ${cacheKey}`);
+    } catch (error) {
+      this.logger.error('Cache write error:', error);
+    }
+
+    return categories;
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
@@ -161,7 +274,12 @@ export class CategoryService {
     }
 
     Object.assign(category, updateCategoryDto);
-    return category.save();
+    const savedCategory = await category.save();
+
+    // Invalidate cache
+    await this.invalidateCache();
+
+    return savedCategory;
   }
 
   async remove(id: string): Promise<{ message: string }> {
@@ -176,6 +294,10 @@ export class CategoryService {
     }
 
     await category.deleteOne();
+
+    // Invalidate cache
+    await this.invalidateCache();
+
     return { message: `Category ${category.name} has been deleted successfully` };
   }
 

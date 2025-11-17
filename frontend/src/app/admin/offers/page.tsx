@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { offerApi, productApi, categoryApi } from '@/lib/api';
-import { Offer, Product, Category, CreateOfferDto, OfferRules } from '@/types';
+import { offerApi, productApi, categoryApi, subcategoryApi } from '@/lib/api';
+import { Offer, Product, Category, Subcategory, CreateOfferDto, OfferRules } from '@/types';
 
 type OfferType = 'buyXgetY' | 'bundleDiscount' | 'percentageOff' | 'fixedAmountOff';
 
@@ -10,9 +10,16 @@ export default function OfferManagementPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterActive, setFilterActive] = useState<string>('all');
+
+  // Cascading selection state
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [filteredSubcategories, setFilteredSubcategories] = useState<Subcategory[]>([]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,10 +37,17 @@ export default function OfferManagementPage() {
     rules: {},
     productIds: [],
     categoryIds: [],
+    subcategoryIds: [],
     startDate: '',
     endDate: '',
     isActive: true,
     priority: 0,
+    image: '',
+    homepageSubtitle: '',
+    homepagePrice: '',
+    homepageCategory: '',
+    displayOnHomepage: false,
+    displayInNavbar: false,
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -59,9 +73,10 @@ export default function OfferManagementPage() {
 
   const fetchSupportData = useCallback(async () => {
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
+      const [productsRes, categoriesRes, subcategoriesRes] = await Promise.all([
         productApi.getAll({ limit: 100, isActive: true }),
         categoryApi.getAll({ isActive: true }),
+        subcategoryApi.getAll({ isActive: true }),
       ]);
 
       const productsData = productsRes.data;
@@ -69,6 +84,9 @@ export default function OfferManagementPage() {
 
       const categoriesData = categoriesRes.data;
       setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
+
+      const subcategoriesData = subcategoriesRes.data;
+      setSubcategories(Array.isArray(subcategoriesData) ? subcategoriesData : subcategoriesData.data || []);
     } catch (err) {
       console.error('Failed to fetch support data:', err);
     }
@@ -87,13 +105,56 @@ export default function OfferManagementPage() {
       rules: {},
       productIds: [],
       categoryIds: [],
+      subcategoryIds: [],
       startDate: '',
       endDate: '',
       isActive: true,
       priority: 0,
+      image: '',
+      homepageSubtitle: '',
+      homepagePrice: '',
+      homepageCategory: '',
+      displayOnHomepage: false,
+      displayInNavbar: false,
     });
     setFormErrors({});
     setEditingOffer(null);
+    setSelectedCategory('');
+    setSelectedSubcategory('');
+    setFilteredSubcategories([]);
+    setFilteredProducts([]);
+  };
+
+  // Handle category change - filter subcategories
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory('');
+    setFilteredProducts([]);
+    setFormData(prev => ({ ...prev, productIds: [], subcategoryIds: [] }));
+
+    if (categoryId) {
+      const filtered = subcategories.filter(
+        sub => (sub.categoryId as Category)?._id === categoryId || sub.categoryId === categoryId
+      );
+      setFilteredSubcategories(filtered);
+    } else {
+      setFilteredSubcategories([]);
+    }
+  };
+
+  // Handle subcategory change - filter products
+  const handleSubcategoryChange = (subcategoryId: string) => {
+    setSelectedSubcategory(subcategoryId);
+    setFormData(prev => ({ ...prev, productIds: [], subcategoryIds: subcategoryId ? [subcategoryId] : [] }));
+
+    if (subcategoryId) {
+      const filtered = products.filter(
+        prod => (prod.subcategoryId as Subcategory)?._id === subcategoryId || prod.subcategoryId === subcategoryId
+      );
+      setFilteredProducts(filtered);
+    } else {
+      setFilteredProducts([]);
+    }
   };
 
   const openCreateModal = () => {
@@ -110,11 +171,46 @@ export default function OfferManagementPage() {
       rules: offer.rules,
       productIds: offer.productIds || [],
       categoryIds: offer.categoryIds || [],
+      subcategoryIds: offer.subcategoryIds || [],
       startDate: new Date(offer.startDate).toISOString().slice(0, 16),
       endDate: new Date(offer.endDate).toISOString().slice(0, 16),
       isActive: offer.isActive,
       priority: offer.priority,
+      image: offer.image || '',
+      homepageSubtitle: offer.homepageSubtitle || '',
+      homepagePrice: offer.homepagePrice || '',
+      homepageCategory: offer.homepageCategory || '',
+      displayOnHomepage: offer.displayOnHomepage || false,
+      displayInNavbar: offer.displayInNavbar || false,
     });
+
+    // Initialize cascading selection for editing
+    if (offer.productIds && offer.productIds.length > 0) {
+      // Find the first product to get its subcategory and category
+      const firstProductId = offer.productIds[0];
+      const product = products.find(p => p._id === firstProductId);
+      if (product) {
+        const subcategoryId = (product.subcategoryId as Subcategory)?._id || product.subcategoryId as string;
+        const subcategory = subcategories.find(s => s._id === subcategoryId);
+        if (subcategory) {
+          const categoryId = (subcategory.categoryId as Category)?._id || subcategory.categoryId as string;
+          setSelectedCategory(categoryId);
+          setFilteredSubcategories(subcategories.filter(
+            sub => (sub.categoryId as Category)?._id === categoryId || sub.categoryId === categoryId
+          ));
+          setSelectedSubcategory(subcategoryId);
+          setFilteredProducts(products.filter(
+            prod => (prod.subcategoryId as Subcategory)?._id === subcategoryId || prod.subcategoryId === subcategoryId
+          ));
+        }
+      }
+    } else {
+      setSelectedCategory('');
+      setSelectedSubcategory('');
+      setFilteredSubcategories([]);
+      setFilteredProducts([]);
+    }
+
     setIsModalOpen(true);
   };
 
@@ -415,13 +511,13 @@ export default function OfferManagementPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" onClick={closeModal}>
+            <div className="fixed inset-0 transition-opacity">
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full relative z-50">
               <form onSubmit={handleSubmit}>
                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                   <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
@@ -625,54 +721,177 @@ export default function OfferManagementPage() {
                       )}
                     </div>
 
-                    {/* Products */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Products (Multi-select)
-                      </label>
-                      <select
-                        multiple
-                        value={formData.productIds || []}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            productIds: Array.from(e.target.selectedOptions, (opt) => opt.value),
-                          }))
-                        }
-                        className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
-                      >
-                        {products.map((product) => (
-                          <option key={product._id} value={product._id}>
-                            {product.name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p>
+                    {/* Cascading Selection: Category -> Subcategory -> Products */}
+                    <div className="md:col-span-2 bg-green-50 p-4 rounded-md">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Product Selection (Cascading)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Category Selection */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            1. Select Category *
+                          </label>
+                          <select
+                            value={selectedCategory}
+                            onChange={(e) => handleCategoryChange(e.target.value)}
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          >
+                            <option value="">-- Choose Category --</option>
+                            {categories.map((category) => (
+                              <option key={category._id} value={category._id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Subcategory Selection */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            2. Select Subcategory *
+                          </label>
+                          <select
+                            value={selectedSubcategory}
+                            onChange={(e) => handleSubcategoryChange(e.target.value)}
+                            disabled={!selectedCategory}
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                          >
+                            <option value="">-- Choose Subcategory --</option>
+                            {filteredSubcategories.map((subcategory) => (
+                              <option key={subcategory._id} value={subcategory._id}>
+                                {subcategory.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Products Selection */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            3. Select Products * ({formData.productIds?.length || 0} selected)
+                          </label>
+                          <select
+                            multiple
+                            value={formData.productIds || []}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                productIds: Array.from(e.target.selectedOptions, (opt) => opt.value),
+                              }))
+                            }
+                            disabled={!selectedSubcategory}
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32 disabled:bg-gray-100"
+                          >
+                            {filteredProducts.map((product) => (
+                              <option key={product._id} value={product._id}>
+                                {product.name} - ₹{product.discountPrice || product.price}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple products</p>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Categories */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Categories (Multi-select)
-                      </label>
-                      <select
-                        multiple
-                        value={formData.categoryIds || []}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            categoryIds: Array.from(e.target.selectedOptions, (opt) => opt.value),
-                          }))
-                        }
-                        className="text-black w-full text-black px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
-                      >
-                        {categories.map((category) => (
-                          <option key={category._id} value={category._id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p>
+                    {/* Homepage Display Settings */}
+                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-md">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Homepage Display Settings</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Image URL */}
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Image URL (for homepage card)
+                          </label>
+                          <input
+                            type="url"
+                            value={formData.image || ''}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, image: e.target.value }))
+                            }
+                            placeholder="https://example.com/image.jpg"
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+
+                        {/* Homepage Subtitle */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Homepage Subtitle (e.g., Under, BUY 3)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.homepageSubtitle || ''}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, homepageSubtitle: e.target.value }))
+                            }
+                            placeholder="Under"
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+
+                        {/* Homepage Price */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Homepage Price (e.g., ₹500, ₹3000)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.homepagePrice || ''}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, homepagePrice: e.target.value }))
+                            }
+                            placeholder="₹500"
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+
+                        {/* Homepage Category */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Homepage Category (e.g., Shirts, T-Shirts)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.homepageCategory || ''}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, homepageCategory: e.target.value }))
+                            }
+                            placeholder="Shirts"
+                            className="text-black w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+
+                        {/* Display On Homepage */}
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="displayOnHomepage"
+                            checked={formData.displayOnHomepage || false}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, displayOnHomepage: e.target.checked }))
+                            }
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor="displayOnHomepage" className="ml-2 block text-sm text-gray-900">
+                            Display on Homepage
+                          </label>
+                        </div>
+
+                        {/* Display In Navbar */}
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="displayInNavbar"
+                            checked={formData.displayInNavbar || false}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, displayInNavbar: e.target.checked }))
+                            }
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor="displayInNavbar" className="ml-2 block text-sm text-gray-900">
+                            Display in Navbar Dropdown
+                          </label>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Start Date */}
