@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from './providers';
+import DataPreloader from '@/components/common/DataPreloader';
 
 export const metadata: Metadata = {
   title: 'Narayana eCommerce',
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <DataPreloader />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -98,9 +98,9 @@ export const subcategoryApi = {
   getById: (id: string) => api.get(`/subcategory/${id}`),
   getBySlug: (slug: string) => api.get(`/subcategory/slug/${slug}`),
   getByCategory: (categoryId: string) => api.get(`/subcategory/category/${categoryId}`),
-  create: (data: { name: string; slug?: string; categoryId: string; isActive?: boolean }) =>
+  create: (data: { name: string; slug?: string; categoryId: string; image?: string; isActive?: boolean }) =>
     api.post('/subcategory', data),
-  update: (id: string, data: { name?: string; slug?: string; categoryId?: string; isActive?: boolean }) =>
+  update: (id: string, data: { name?: string; slug?: string; categoryId?: string; image?: string; isActive?: boolean }) =>
     api.patch(`/subcategory/${id}`, data),
   delete: (id: string) => api.delete(`/subcategory/${id}`),
 };
@@ -120,6 +120,7 @@ export const productApi = {
     isActive?: boolean;
     search?: string;
     familySKU?: string;
+    productIds?: string; // Comma-separated list of product IDs
   }) => api.get('/products', { params }),
   getById: (id: string) => api.get(`/products/${id}`),
   getBySku: (sku: string) => api.get(`/products/sku/${sku}`),
@@ -173,6 +174,8 @@ export const offerApi = {
   getAll: (params?: { page?: number; limit?: number; isActive?: boolean }) =>
     api.get('/offers', { params }),
   getActive: () => api.get('/offers/active'),
+  getHomepage: () => api.get('/offers/homepage'),
+  getNavbar: () => api.get('/offers/navbar'),
   getById: (id: string) => api.get(`/offers/${id}`),
   getForProduct: (productId: string) => api.get(`/offers/product/${productId}`),
   create: (data: object) => api.post('/offers', data),

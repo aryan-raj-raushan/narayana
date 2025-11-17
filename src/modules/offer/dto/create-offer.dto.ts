@@ -164,4 +164,52 @@ export class CreateOfferDto {
   @IsNumber()
   @Min(1)
   priority?: number;
+
+  @ApiPropertyOptional({
+    description: 'Image URL for the offer',
+    example: 'https://example.com/offer-image.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  image?: string;
+
+  @ApiPropertyOptional({
+    description: 'Subtitle text for homepage display (e.g., "Under", "BUY 3")',
+    example: 'Under',
+  })
+  @IsOptional()
+  @IsString()
+  homepageSubtitle?: string;
+
+  @ApiPropertyOptional({
+    description: 'Price text for homepage display (e.g., "₹500", "₹3000")',
+    example: '₹500',
+  })
+  @IsOptional()
+  @IsString()
+  homepagePrice?: string;
+
+  @ApiPropertyOptional({
+    description: 'Category name for homepage display (e.g., "Shirts", "T-Shirts")',
+    example: 'Shirts',
+  })
+  @IsOptional()
+  @IsString()
+  homepageCategory?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether to display this offer on homepage',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  displayOnHomepage?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether to display this offer in navbar dropdown',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  displayInNavbar?: boolean;
 }

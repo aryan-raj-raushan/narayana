@@ -93,6 +93,33 @@ export class OfferService {
       .exec();
   }
 
+  async getHomepageOffers(): Promise<Offer[]> {
+    const now = new Date();
+    return this.offerModel
+      .find({
+        isActive: true,
+        displayOnHomepage: true,
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+      })
+      .sort({ priority: -1 })
+      .limit(10)
+      .exec();
+  }
+
+  async getNavbarOffers(): Promise<Offer[]> {
+    const now = new Date();
+    return this.offerModel
+      .find({
+        isActive: true,
+        displayInNavbar: true,
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+      })
+      .sort({ priority: -1 })
+      .exec();
+  }
+
   async getOffersForProduct(productId: string): Promise<Offer[]> {
     const now = new Date();
     const productObjectId = new Types.ObjectId(productId);

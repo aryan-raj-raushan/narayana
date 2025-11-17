@@ -81,6 +81,7 @@ export interface Subcategory {
   name: string;
   slug: string;
   categoryId: Category | string;
+  image?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -189,6 +190,12 @@ export interface Offer {
   endDate: string;
   isActive: boolean;
   priority: number;
+  image?: string;
+  homepageSubtitle?: string;
+  homepagePrice?: string;
+  homepageCategory?: string;
+  displayOnHomepage?: boolean;
+  displayInNavbar?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -261,6 +268,7 @@ export interface CreateSubcategoryDto {
   name: string;
   slug?: string;
   categoryId: string;
+  image?: string;
   isActive?: boolean;
 }
 
@@ -277,6 +285,12 @@ export interface CreateOfferDto {
   endDate: string;
   isActive?: boolean;
   priority?: number;
+  image?: string;
+  homepageSubtitle?: string;
+  homepagePrice?: string;
+  homepageCategory?: string;
+  displayOnHomepage?: boolean;
+  displayInNavbar?: boolean;
 }
 
 export interface AddToCartDto {
