@@ -10,15 +10,17 @@ import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuthStore } from '@/store/authStore';
 import { useDataStore } from '@/store/dataStore';
+import { useGuestStore } from '@/store/guestStore';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import SearchDropdown from '@/components/common/SearchDropdown';
 
 function ProductsPageContent() {
   const searchParams = useSearchParams();
-  const { userType } = useAuthStore();
+  const { userType, user } = useAuthStore();
   const { addToCart } = useCartStore();
   const { addToWishlist } = useWishlistStore();
+  const { guestId, initGuestSession } = useGuestStore();
 
   // Use shared data store
   const {
@@ -273,14 +275,18 @@ function ProductsPageContent() {
   }, [fetchProducts]);
 
   const handleAddToCart = async (productId: string) => {
-    if (userType !== 'user') {
-      alert('Please login to add items to cart');
-      return;
-    }
-
     setAddingToCart(productId);
     try {
-      await addToCart(productId, 1);
+      if (userType === 'user' && user) {
+        await addToCart(productId, 1);
+      } else {
+        // Guest user - use Redis-based cart
+        let currentGuestId = guestId;
+        if (!currentGuestId) {
+          currentGuestId = await initGuestSession();
+        }
+        await addToCart(productId, 1, currentGuestId);
+      }
       alert('Added to cart successfully!');
     } catch (err) {
       console.error('Failed to add to cart:', err);
@@ -291,14 +297,18 @@ function ProductsPageContent() {
   };
 
   const handleAddToWishlist = async (productId: string) => {
-    if (userType !== 'user') {
-      alert('Please login to add items to wishlist');
-      return;
-    }
-
     setAddingToWishlist(productId);
     try {
-      await addToWishlist(productId);
+      if (userType === 'user' && user) {
+        await addToWishlist(productId);
+      } else {
+        // Guest user - use Redis-based wishlist
+        let currentGuestId = guestId;
+        if (!currentGuestId) {
+          currentGuestId = await initGuestSession();
+        }
+        await addToWishlist(productId, currentGuestId);
+      }
       alert('Added to wishlist successfully!');
     } catch (err) {
       console.error('Failed to add to wishlist:', err);
