@@ -4,10 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
+import { useGuestStore } from '@/store/guestStore';
+import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register, isLoading, error, clearError, loadFromStorage, userType } = useAuthStore();
+  const { guestId, clearGuestSession, loadFromStorage: loadGuestFromStorage } = useGuestStore();
+  const { fetchCount: fetchCartCount, resetCart } = useCartStore();
+  const { fetchCount: fetchWishlistCount, resetWishlist } = useWishlistStore();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,7 +24,8 @@ export default function RegisterPage() {
 
   useEffect(() => {
     loadFromStorage();
-  }, [loadFromStorage]);
+    loadGuestFromStorage();
+  }, [loadFromStorage, loadGuestFromStorage]);
 
   useEffect(() => {
     if (userType) {
@@ -42,7 +49,14 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(name, email, password, phone || undefined);
+      await register(name, email, password, phone || undefined, guestId);
+      // Clear guest session and reset stores after successful registration
+      clearGuestSession();
+      resetCart();
+      resetWishlist();
+      // Fetch new counts from user's database cart/wishlist
+      fetchCartCount();
+      fetchWishlistCount();
       router.push('/products');
     } catch {
       // Error is handled by the store

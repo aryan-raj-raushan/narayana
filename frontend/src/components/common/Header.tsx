@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useDataStore } from '@/store/dataStore';
+import { useGuestStore } from '@/store/guestStore';
 import { offerApi } from '@/lib/api';
 import { Offer } from '@/types';
 import SearchDropdown from './SearchDropdown';
@@ -14,6 +15,7 @@ export default function Header() {
   const { user, admin, userType, logout, loadFromStorage } = useAuthStore();
   const { count: cartCount, summary: cartSummary, fetchCount: fetchCartCount } = useCartStore();
   const { count: wishlistCount, fetchCount: fetchWishlistCount } = useWishlistStore();
+  const { guestId, initGuestSession, loadFromStorage: loadGuestFromStorage } = useGuestStore();
 
   // Use shared data store
   const {
@@ -39,6 +41,7 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
     loadFromStorage();
+    loadGuestFromStorage();
 
     // Fetch genders from shared store (cached)
     fetchGenders();
@@ -47,14 +50,27 @@ export default function Header() {
     offerApi.getNavbar().then((response) => {
       setNavbarOffers(response.data || []);
     }).catch(console.error);
-  }, [loadFromStorage, fetchGenders]);
+  }, [loadFromStorage, loadGuestFromStorage, fetchGenders]);
 
   useEffect(() => {
     if (mounted && userType === 'user' && user) {
+      // Logged in user - fetch from database
       fetchCartCount();
       fetchWishlistCount();
+    } else if (mounted && !user && !admin) {
+      // Guest user - initialize session and fetch from Redis
+      const initGuest = async () => {
+        try {
+          const id = await initGuestSession();
+          fetchCartCount(id);
+          fetchWishlistCount(id);
+        } catch (error) {
+          console.error('Failed to init guest session:', error);
+        }
+      };
+      initGuest();
     }
-  }, [mounted, userType, user, fetchCartCount, fetchWishlistCount]);
+  }, [mounted, userType, user, admin, fetchCartCount, fetchWishlistCount, initGuestSession, guestId]);
 
   // Fetch categories when gender is expanded (from shared cache)
   const handleGenderExpand = async (genderId: string) => {

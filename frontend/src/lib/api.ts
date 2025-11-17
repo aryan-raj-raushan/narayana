@@ -55,9 +55,9 @@ export default api;
 export const authApi = {
   adminLogin: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
-  userLogin: (data: { email: string; password: string }) =>
+  userLogin: (data: { email: string; password: string; guestId?: string }) =>
     api.post('/user/login', data),
-  userRegister: (data: { name: string; email: string; password: string; phone?: string }) =>
+  userRegister: (data: { name: string; email: string; password: string; phone?: string; guestId?: string }) =>
     api.post('/user/register', data),
   getAdminProfile: () => api.get('/auth/me'),
   getUserProfile: () => api.get('/user/profile'),
@@ -205,4 +205,31 @@ export const mediaApi = {
   getDetails: (fileId: string) => api.get(`/media/details/${fileId}`),
   delete: (fileId: string) => api.delete(`/media/${fileId}`),
   deleteMultiple: (fileIds: string[]) => api.delete('/media', { data: { fileIds } }),
+};
+
+// Guest API
+export const guestApi = {
+  generateSession: () => api.post('/guest/session'),
+  // Cart
+  getCart: (guestId: string) => api.get('/guest/cart', { params: { guestId } }),
+  getCartCount: (guestId: string) => api.get('/guest/cart/count', { params: { guestId } }),
+  addToCart: (data: { guestId: string; productId: string; quantity?: number }) =>
+    api.post('/guest/cart', data),
+  updateCartItem: (data: { guestId: string; productId: string; quantity: number }) =>
+    api.patch('/guest/cart', data),
+  removeFromCart: (guestId: string, productId: string) =>
+    api.delete(`/guest/cart/${productId}`, { params: { guestId } }),
+  clearCart: (guestId: string) => api.delete('/guest/cart', { params: { guestId } }),
+  // Wishlist
+  getWishlist: (guestId: string) => api.get('/guest/wishlist', { params: { guestId } }),
+  getWishlistCount: (guestId: string) => api.get('/guest/wishlist/count', { params: { guestId } }),
+  checkInWishlist: (guestId: string, productId: string) =>
+    api.get(`/guest/wishlist/check/${productId}`, { params: { guestId } }),
+  addToWishlist: (data: { guestId: string; productId: string }) =>
+    api.post('/guest/wishlist', data),
+  removeFromWishlist: (guestId: string, productId: string) =>
+    api.delete(`/guest/wishlist/${productId}`, { params: { guestId } }),
+  clearWishlist: (guestId: string) => api.delete('/guest/wishlist', { params: { guestId } }),
+  moveWishlistToCart: (guestId: string, productId: string) =>
+    api.post(`/guest/wishlist/move-to-cart/${productId}`, { guestId }),
 };

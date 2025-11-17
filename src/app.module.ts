@@ -15,6 +15,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { EmailModule } from './modules/email/email.module';
 import { OrderModule } from './modules/order/order.module';
 import { OfferModule } from './modules/offer/offer.module';
+import { GuestModule } from './modules/guest/guest.module';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -42,6 +43,7 @@ import imagekitConfig from './config/imagekit.config';
     EmailModule,
     OrderModule,
     OfferModule,
+    GuestModule,
   ],
   controllers: [AppController],
   providers: [],

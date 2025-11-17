@@ -19,7 +19,8 @@ import { UserLoginDto } from './dto/user-login.dto';
 import { UpdateUserDto, UpdatePasswordDto } from './dto/update-user.dto';
 import { AddAddressDto } from './dto/add-address.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import { GuestService } from '../guest/guest.service';
 
 @ApiTags('User')
 @Controller('user')
@@ -27,6 +28,8 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => GuestService))
+    private readonly guestService: GuestService,
   ) {}
 
   @Post('register')
@@ -44,9 +47,28 @@ export class UserController {
     };
     const accessToken = this.jwtService.sign(payload);
 
+    // Merge guest cart and wishlist if guestId provided
+    let mergeResult = null;
+    if (registerUserDto.guestId) {
+      try {
+        const cartMerge = await this.guestService.mergeCartOnLogin(
+          registerUserDto.guestId,
+          user._id.toString(),
+        );
+        const wishlistMerge = await this.guestService.mergeWishlistOnLogin(
+          registerUserDto.guestId,
+          user._id.toString(),
+        );
+        mergeResult = { cart: cartMerge, wishlist: wishlistMerge };
+      } catch (error) {
+        console.error('Guest merge error:', error);
+      }
+    }
+
     return {
       accessToken,
       user,
+      mergeResult,
     };
   }
 
@@ -83,9 +105,28 @@ export class UserController {
     const userObj = user.toObject();
     delete userObj.password;
 
+    // Merge guest cart and wishlist if guestId provided
+    let mergeResult = null;
+    if (userLoginDto.guestId) {
+      try {
+        const cartMerge = await this.guestService.mergeCartOnLogin(
+          userLoginDto.guestId,
+          user._id.toString(),
+        );
+        const wishlistMerge = await this.guestService.mergeWishlistOnLogin(
+          userLoginDto.guestId,
+          user._id.toString(),
+        );
+        mergeResult = { cart: cartMerge, wishlist: wishlistMerge };
+      } catch (error) {
+        console.error('Guest merge error:', error);
+      }
+    }
+
     return {
       accessToken,
       user: userObj,
+      mergeResult,
     };
   }
 
