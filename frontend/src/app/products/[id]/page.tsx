@@ -9,15 +9,17 @@ import { Product, Gender, Category, Subcategory } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuthStore } from '@/store/authStore';
+import { useGuestStore } from '@/store/guestStore';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = params.id as string;
-  const { userType } = useAuthStore();
+  const { userType, user } = useAuthStore();
   const { addToCart } = useCartStore();
   const { addToWishlist } = useWishlistStore();
+  const { guestId, initGuestSession } = useGuestStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -80,11 +82,6 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   const handleAddToCart = async () => {
-    if (userType !== 'user') {
-      alert('Please login to add items to cart');
-      return;
-    }
-
     if (product?.sizes && product.sizes.length > 0 && !selectedSize) {
       alert('Please select a size');
       return;
@@ -92,7 +89,18 @@ export default function ProductDetailPage() {
 
     setAddingToCart(true);
     try {
-      await addToCart(productId, quantity);
+      // Check if user is logged in
+      if (userType === 'user' && user) {
+        // Logged-in user - add to database cart
+        await addToCart(productId, quantity);
+      } else {
+        // Guest user - add to Redis cart
+        let currentGuestId = guestId;
+        if (!currentGuestId) {
+          currentGuestId = await initGuestSession();
+        }
+        await addToCart(productId, quantity, currentGuestId);
+      }
       alert('Added to cart successfully!');
     } catch (err) {
       console.error('Failed to add to cart:', err);
@@ -103,14 +111,20 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToWishlist = async () => {
-    if (userType !== 'user') {
-      alert('Please login to add items to wishlist');
-      return;
-    }
-
     setAddingToWishlist(true);
     try {
-      await addToWishlist(productId);
+      // Check if user is logged in
+      if (userType === 'user' && user) {
+        // Logged-in user - add to database wishlist
+        await addToWishlist(productId);
+      } else {
+        // Guest user - add to Redis wishlist
+        let currentGuestId = guestId;
+        if (!currentGuestId) {
+          currentGuestId = await initGuestSession();
+        }
+        await addToWishlist(productId, currentGuestId);
+      }
       alert('Added to wishlist successfully!');
     } catch (err) {
       console.error('Failed to add to wishlist:', err);
