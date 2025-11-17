@@ -305,6 +305,65 @@ export class GuestService {
     return { message: 'Item moved to cart', guestId };
   }
 
+  // ==================== CHECKOUT ====================
+
+  async checkout(dto: GuestCheckoutDto): Promise<any> {
+    const { guestId, customerDetails, shippingAddress, notes } = dto;
+
+    // Get cart items
+    const cart = await this.getCart(guestId);
+
+    if (cart.items.length === 0) {
+      throw new BadRequestException('Cart is empty');
+    }
+
+    // Validate stock for all items
+    for (const item of cart.items) {
+      const product = await this.productService.findOne(item.productId);
+      if (product.stock < item.quantity) {
+        throw new BadRequestException(
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`,
+        );
+      }
+    }
+
+    // Generate order ID
+    const orderId = `GO_${Date.now()}_${uuidv4().substring(0, 8).toUpperCase()}`;
+
+    // Create order object
+    const order = {
+      orderId,
+      guestId,
+      customerDetails,
+      shippingAddress,
+      notes: notes || '',
+      items: cart.items.map((item) => ({
+        productId: item.productId,
+        productName: item.product.name,
+        sku: item.product.sku,
+        quantity: item.quantity,
+        price: item.price,
+        itemTotal: item.itemTotal,
+      })),
+      summary: cart.summary,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Store order in Redis (for 7 days)
+    const orderKey = `guest:order:${orderId}`;
+    await this.redisService.set(orderKey, JSON.stringify(order), 604800); // 7 days
+
+    // Clear the cart after successful order
+    await this.clearCart(guestId);
+
+    return {
+      message: 'Order placed successfully',
+      orderId,
+      orderDetails: order,
+    };
+  }
+
   // ==================== MERGE OPERATIONS ====================
 
   async mergeCartOnLogin(guestId: string, userId: string): Promise<any> {
