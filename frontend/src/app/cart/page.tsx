@@ -6,18 +6,32 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
-import { orderApi } from '@/lib/api';
+import { useGuestStore } from '@/store/guestStore';
 
 export default function CartPage() {
   const router = useRouter();
   const { items, summary, isLoading, error, fetchCart, updateQuantity, removeFromCart, clearCart, clearError } = useCartStore();
-  const { userType } = useAuthStore();
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
-  const [orderError, setOrderError] = useState('');
+  const { userType, user } = useAuthStore();
+  const { guestId, initGuestSession } = useGuestStore();
+  const [currentGuestId, setCurrentGuestId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+    const initCart = async () => {
+      if (userType === 'user' && user) {
+        // Logged in user - fetch from database
+        fetchCart();
+      } else {
+        // Guest user - fetch from Redis
+        let gId = guestId;
+        if (!gId) {
+          gId = await initGuestSession();
+        }
+        setCurrentGuestId(gId);
+        fetchCart(gId);
+      }
+    };
+    initCart();
+  }, [fetchCart, userType, user, guestId, initGuestSession]);
 
   const calculateTotal = () => {
     if (summary) {
@@ -44,7 +58,8 @@ export default function CartPage() {
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
     try {
-      await updateQuantity(itemId, newQuantity);
+      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      await updateQuantity(itemId, newQuantity, gId);
     } catch {
       // Error handled by store
     }
@@ -52,7 +67,8 @@ export default function CartPage() {
 
   const handleRemoveItem = async (itemId: string) => {
     try {
-      await removeFromCart(itemId);
+      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      await removeFromCart(itemId, gId);
     } catch {
       // Error handled by store
     }
@@ -61,7 +77,8 @@ export default function CartPage() {
   const handleClearCart = async () => {
     if (confirm('Are you sure you want to clear your cart?')) {
       try {
-        await clearCart();
+        const gId = userType === 'user' && user ? undefined : currentGuestId;
+        await clearCart(gId);
       } catch {
         // Error handled by store
       }
@@ -69,41 +86,9 @@ export default function CartPage() {
   };
 
   const handleProceedToCheckout = async () => {
-    if (!userType) {
-      router.push('/login');
-      return;
-    }
-
-    setIsCreatingOrder(true);
-    setOrderError('');
-    try {
-      const response = await orderApi.create({});
-      alert(`Order created successfully! Order ID: ${response.data.orderId}`);
-      await clearCart();
-      router.push('/orders');
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setOrderError(error.response?.data?.message || 'Failed to create order');
-    } finally {
-      setIsCreatingOrder(false);
-    }
+    // Redirect to unified checkout page for both logged-in and guest users
+    router.push('/checkout');
   };
-
-  if (!userType) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please login to view your cart</h2>
-          <Link
-            href="/login"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -121,16 +106,6 @@ export default function CartPage() {
                 >
                   Dismiss
                 </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {orderError && (
-          <div className="rounded-md bg-red-50 p-4 mb-6">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">{orderError}</h3>
               </div>
             </div>
           </div>
@@ -285,20 +260,10 @@ export default function CartPage() {
                 <div className="mt-6">
                   <button
                     onClick={handleProceedToCheckout}
-                    disabled={isLoading || isCreatingOrder}
+                    disabled={isLoading}
                     className="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                   >
-                    {isCreatingOrder ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Creating Order...
-                      </>
-                    ) : (
-                      'Proceed to Checkout'
-                    )}
+                    Proceed to Checkout
                   </button>
                 </div>
               </div>

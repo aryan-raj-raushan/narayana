@@ -15,6 +15,7 @@ import {
   GuestUpdateCartDto,
   GuestCartQueryDto,
   GuestAddToWishlistDto,
+  GuestCheckoutDto,
 } from './dto/guest.dto';
 
 @ApiTags('Guest')
@@ -140,5 +141,14 @@ export class GuestController {
     @Body() body: { guestId: string },
   ) {
     return this.guestService.moveWishlistToCart(body.guestId, productId);
+  }
+
+  // ==================== CHECKOUT ====================
+
+  @Post('checkout')
+  @ApiOperation({ summary: 'Process guest checkout' })
+  @ApiResponse({ status: 201, description: 'Order created successfully' })
+  async checkout(@Body() dto: GuestCheckoutDto) {
+    return this.guestService.checkout(dto);
   }
 }

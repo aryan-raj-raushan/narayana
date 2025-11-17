@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, IsNumber, Min, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, Min, IsOptional, ValidateNested, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class GuestAddToCartDto {
   @ApiProperty({ description: 'Guest session ID' })
@@ -67,16 +68,11 @@ export class GuestAddToWishlistDto {
   productId: string;
 }
 
-export class GuestCheckoutDto {
-  @ApiProperty({ description: 'Guest session ID' })
-  @IsString()
-  @IsNotEmpty()
-  guestId: string;
-
+export class CustomerDetailsDto {
   @ApiProperty({ description: 'Full name' })
   @IsString()
   @IsNotEmpty()
-  fullName: string;
+  name: string;
 
   @ApiProperty({ description: 'Email address' })
   @IsString()
@@ -87,16 +83,13 @@ export class GuestCheckoutDto {
   @IsString()
   @IsNotEmpty()
   phone: string;
+}
 
-  @ApiProperty({ description: 'Address line 1' })
+export class ShippingAddressDto {
+  @ApiProperty({ description: 'Street address' })
   @IsString()
   @IsNotEmpty()
-  addressLine1: string;
-
-  @ApiProperty({ description: 'Address line 2', required: false })
-  @IsString()
-  @IsOptional()
-  addressLine2?: string;
+  address: string;
 
   @ApiProperty({ description: 'City' })
   @IsString()
@@ -108,15 +101,29 @@ export class GuestCheckoutDto {
   @IsNotEmpty()
   state: string;
 
-  @ApiProperty({ description: 'Pincode' })
+  @ApiProperty({ description: 'PIN code' })
   @IsString()
   @IsNotEmpty()
   pincode: string;
+}
 
-  @ApiProperty({ description: 'Country', default: 'India' })
+export class GuestCheckoutDto {
+  @ApiProperty({ description: 'Guest session ID' })
   @IsString()
-  @IsOptional()
-  country?: string;
+  @IsNotEmpty()
+  guestId: string;
+
+  @ApiProperty({ description: 'Customer details' })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CustomerDetailsDto)
+  customerDetails: CustomerDetailsDto;
+
+  @ApiProperty({ description: 'Shipping address' })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => ShippingAddressDto)
+  shippingAddress: ShippingAddressDto;
 
   @ApiProperty({ description: 'Order notes', required: false })
   @IsString()

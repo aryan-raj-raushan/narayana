@@ -232,4 +232,11 @@ export const guestApi = {
   clearWishlist: (guestId: string) => api.delete('/guest/wishlist', { params: { guestId } }),
   moveWishlistToCart: (guestId: string, productId: string) =>
     api.post(`/guest/wishlist/move-to-cart/${productId}`, { guestId }),
+  // Checkout
+  checkout: (data: {
+    guestId: string;
+    customerDetails: { name: string; email: string; phone: string };
+    shippingAddress: { address: string; city: string; state: string; pincode: string };
+    notes?: string;
+  }) => api.post('/guest/checkout', data),
 };
