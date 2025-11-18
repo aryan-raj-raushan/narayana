@@ -1,26 +1,51 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
+import { useGuestStore } from '@/store/guestStore';
 
 export default function WishlistPage() {
   const { items, isLoading, error, fetchWishlist, removeFromWishlist, clearError } = useWishlistStore();
   const { addToCart, isLoading: isCartLoading } = useCartStore();
-  const { userType, loadFromStorage } = useAuthStore();
+  const { userType, user } = useAuthStore();
+  const { guestId, initGuestSession } = useGuestStore();
+  const [currentGuestId, setCurrentGuestId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadFromStorage();
-    fetchWishlist();
-  }, [loadFromStorage, fetchWishlist]);
+    const initWishlist = async () => {
+      if (userType === 'user' && user) {
+        // Logged in user - fetch from database
+        fetchWishlist();
+      } else {
+        // Guest user - fetch from Redis
+        let gId = guestId;
+        if (!gId) {
+          gId = await initGuestSession();
+        }
+        setCurrentGuestId(gId);
+        fetchWishlist(gId);
+      }
+    };
+    initWishlist();
+  }, [fetchWishlist, userType, user, guestId, initGuestSession]);
 
   const handleMoveToCart = async (itemId: string, productId: string) => {
     try {
-      await addToCart(productId);
-      await removeFromWishlist(itemId);
+      if (userType === 'user' && user) {
+        await addToCart(productId);
+        await removeFromWishlist(itemId);
+      } else {
+        // Guest user
+        const gId = currentGuestId || guestId;
+        if (gId) {
+          await addToCart(productId, 1, gId);
+          await removeFromWishlist(itemId, gId);
+        }
+      }
     } catch {
       // Error handled by store
     }
@@ -28,27 +53,12 @@ export default function WishlistPage() {
 
   const handleRemoveFromWishlist = async (itemId: string) => {
     try {
-      await removeFromWishlist(itemId);
+      const gId = userType === 'user' && user ? undefined : currentGuestId;
+      await removeFromWishlist(itemId, gId);
     } catch {
       // Error handled by store
     }
   };
-
-  if (!userType) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please login to view your wishlist</h2>
-          <Link
-            href="/login"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            Go to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

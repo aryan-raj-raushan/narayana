@@ -221,13 +221,14 @@ export class GuestService {
     }
 
     // Get product details for each wishlist item
+    // Format to match user wishlist structure (productId is populated)
     const items = await Promise.all(
       wishlistItems.map(async (item) => {
         try {
           const product = await this.productService.findOne(item.productId);
           return {
-            productId: item.productId,
-            product: {
+            _id: item.productId, // Use productId as _id for guest wishlist items
+            productId: {
               _id: product._id,
               name: product.name,
               sku: product.sku,
