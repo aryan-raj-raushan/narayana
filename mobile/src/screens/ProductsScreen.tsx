@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/theme';
-import api from '../lib/api';
+import { productApi } from '../lib/api';
 import { Product, Gender, Category, Subcategory } from '../types';
 import { ProductCard } from '../components/common/ProductCard';
 import { SearchBar } from '../components/common/SearchBar';
@@ -20,7 +20,6 @@ import { CustomDropdown } from '../components/common/CustomDropdown';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
-import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
 
 const { width } = Dimensions.get('window');
@@ -34,49 +33,63 @@ export const ProductsScreen = ({ navigation, route }: any) => {
   const [totalPages, setTotalPages] = useState(1);
 
   // Filters
-  const [selectedGender, setSelectedGender] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedGender, setSelectedGender] = useState(route.params?.genderId || '');
+  const [selectedCategory, setSelectedCategory] = useState(route.params?.categoryId || '');
   const [selectedSubcategory, setSelectedSubcategory] = useState(route.params?.subcategoryId || '');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [searchQuery, setSearchQuery] = useState(route.params?.search || '');
+  const [productIds, setProductIds] = useState(route.params?.productIds || '');
 
-  const { genders, categories, subcategories, fetchGenders, fetchCategories, fetchSubcategories } = useDataStore();
+  const { genders, allSubcategories, categoriesByGender, fetchGenders, fetchAllSubcategories, fetchCategoriesByGender } = useDataStore();
   const { addToCart } = useCartStore();
   const { addToWishlist } = useWishlistStore();
-  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchGenders();
-    fetchCategories();
-    fetchSubcategories();
+    fetchAllSubcategories();
   }, []);
+
+  useEffect(() => {
+    if (selectedGender) {
+      fetchCategoriesByGender(selectedGender);
+    }
+  }, [selectedGender]);
 
   const fetchProducts = useCallback(async (pageNum = 1) => {
     setIsLoading(pageNum === 1);
     try {
-      let url = `/product?page=${pageNum}&limit=10`;
-      if (selectedGender) url += `&genderId=${selectedGender}`;
-      if (selectedCategory) url += `&categoryId=${selectedCategory}`;
-      if (selectedSubcategory) url += `&subcategoryId=${selectedSubcategory}`;
-      if (minPrice) url += `&minPrice=${minPrice}`;
-      if (maxPrice) url += `&maxPrice=${maxPrice}`;
+      const params: any = {
+        page: pageNum,
+        limit: 10,
+        isActive: true,
+      };
 
-      const response = await api.get(url);
+      if (selectedGender) params.genderId = selectedGender;
+      if (selectedCategory) params.categoryId = selectedCategory;
+      if (selectedSubcategory) params.subcategoryId = selectedSubcategory;
+      if (minPrice) params.minPrice = parseFloat(minPrice);
+      if (maxPrice) params.maxPrice = parseFloat(maxPrice);
+      if (searchQuery) params.search = searchQuery;
+      if (productIds) params.productIds = productIds;
+
+      const response = await productApi.getAll(params);
       const data = response.data;
+      const productsData = data.data || data.products || data;
 
       if (pageNum === 1) {
-        setProducts(data.products || data);
+        setProducts(productsData);
       } else {
-        setProducts((prev) => [...prev, ...(data.products || data)]);
+        setProducts((prev) => [...prev, ...productsData]);
       }
-      setTotalPages(data.totalPages || 1);
+      setTotalPages(data.pagination?.totalPages || data.totalPages || 1);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [selectedGender, selectedCategory, selectedSubcategory, minPrice, maxPrice]);
+  }, [selectedGender, selectedCategory, selectedSubcategory, minPrice, maxPrice, searchQuery, productIds]);
 
   useEffect(() => {
     fetchProducts(1);
@@ -98,26 +111,32 @@ export const ProductsScreen = ({ navigation, route }: any) => {
   };
 
   const handleAddToCart = async (productId: string) => {
-    if (!user) {
-      navigation.navigate('Login');
-      return;
-    }
     try {
       await addToCart(productId, 1);
-    } catch (error) {
+      alert('Added to cart successfully!');
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
+      if (error.response?.status === 401 || error.message?.includes('401')) {
+        alert('Please login to add items to cart');
+        navigation.navigate('Login');
+      } else {
+        alert('Failed to add to cart. Please try again.');
+      }
     }
   };
 
   const handleAddToWishlist = async (productId: string) => {
-    if (!user) {
-      navigation.navigate('Login');
-      return;
-    }
     try {
       await addToWishlist(productId);
-    } catch (error) {
+      alert('Added to wishlist successfully!');
+    } catch (error: any) {
       console.error('Error adding to wishlist:', error);
+      if (error.response?.status === 401 || error.message?.includes('401')) {
+        alert('Please login to add items to wishlist');
+        navigation.navigate('Login');
+      } else {
+        alert('Failed to add to wishlist. Please try again.');
+      }
     }
   };
 
@@ -134,16 +153,15 @@ export const ProductsScreen = ({ navigation, route }: any) => {
     ...genders.map((g) => ({ label: g.name, value: g._id })),
   ];
 
+  const categories = selectedGender ? (categoriesByGender[selectedGender] || []) : [];
   const categoryOptions = [
     { label: 'All Categories', value: '' },
-    ...categories
-      .filter((c) => !selectedGender || c.genderId === selectedGender)
-      .map((c) => ({ label: c.name, value: c._id })),
+    ...categories.map((c) => ({ label: c.name, value: c._id })),
   ];
 
   const subcategoryOptions = [
     { label: 'All Subcategories', value: '' },
-    ...subcategories
+    ...allSubcategories
       .filter((s) => {
         const catId = typeof s.categoryId === 'string' ? s.categoryId : s.categoryId._id;
         return !selectedCategory || catId === selectedCategory;
@@ -162,7 +180,7 @@ export const ProductsScreen = ({ navigation, route }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Products</Text>
+        <Text style={styles.headerTitle}>{route.params?.title || 'Products'}</Text>
         <TouchableOpacity onPress={() => setShowFilters(true)}>
           <Ionicons name="filter-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
@@ -181,7 +199,7 @@ export const ProductsScreen = ({ navigation, route }: any) => {
         >
           <Text style={[styles.chipText, !selectedSubcategory && styles.activeChipText]}>All</Text>
         </TouchableOpacity>
-        {subcategories.slice(0, 4).map((sub) => (
+        {allSubcategories.slice(0, 4).map((sub) => (
           <TouchableOpacity
             key={sub._id}
             style={[styles.quickFilterChip, selectedSubcategory === sub._id && styles.activeChip]}

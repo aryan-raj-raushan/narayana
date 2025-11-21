@@ -46,3 +46,109 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Auth API
+export const authApi = {
+  userLogin: (data: { email: string; password: string }) =>
+    api.post('/user/login', data),
+  userRegister: (data: { name: string; email: string; password: string; phone?: string }) =>
+    api.post('/user/register', data),
+  getUserProfile: () => api.get('/user/profile'),
+  logout: () => api.post('/user/logout'),
+};
+
+// Gender API
+export const genderApi = {
+  getAll: (params?: { page?: number; limit?: number; isActive?: boolean }) =>
+    api.get('/gender', { params }),
+  getById: (id: string) => api.get(`/gender/${id}`),
+  getBySlug: (slug: string) => api.get(`/gender/slug/${slug}`),
+};
+
+// Category API
+export const categoryApi = {
+  getAll: (params?: { page?: number; limit?: number; genderId?: string; isActive?: boolean }) =>
+    api.get('/category', { params }),
+  getById: (id: string) => api.get(`/category/${id}`),
+  getBySlug: (slug: string) => api.get(`/category/slug/${slug}`),
+  getByGender: (genderId: string) => api.get(`/category/gender/${genderId}`),
+};
+
+// Subcategory API
+export const subcategoryApi = {
+  getAll: (params?: { page?: number; limit?: number; categoryId?: string; isActive?: boolean }) =>
+    api.get('/subcategory', { params }),
+  getById: (id: string) => api.get(`/subcategory/${id}`),
+  getBySlug: (slug: string) => api.get(`/subcategory/slug/${slug}`),
+  getByCategory: (categoryId: string) => api.get(`/subcategory/category/${categoryId}`),
+};
+
+// Product API
+export const productApi = {
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
+    genderId?: string;
+    categoryId?: string;
+    subcategoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    underPriceAmount?: number;
+    inStock?: boolean;
+    isActive?: boolean;
+    search?: string;
+    familySKU?: string;
+    productIds?: string; // Comma-separated list of product IDs
+  }) => api.get('/products', { params }),
+  getById: (id: string) => api.get(`/products/${id}`),
+  getBySku: (sku: string) => api.get(`/products/sku/${sku}`),
+  getByCategory: (categoryId: string) => api.get(`/products/by-category/${categoryId}`),
+  getBySubcategory: (subcategoryId: string) => api.get(`/products/by-subcategory/${subcategoryId}`),
+  getByFamily: (familySKU: string) => api.get(`/products/by-family/${familySKU}`),
+  getFeatured: (limit?: number) => api.get('/products/featured', { params: { limit } }),
+  autosuggest: (q: string, limit?: number) => api.get('/products/autosuggest', { params: { q, limit } }),
+};
+
+// Cart API
+export const cartApi = {
+  get: () => api.get('/cart'),
+  getCount: () => api.get('/cart/count'),
+  add: (data: { productId: string; quantity?: number }) => api.post('/cart', data),
+  update: (id: string, quantity: number) => api.patch(`/cart/${id}`, { quantity }),
+  remove: (id: string) => api.delete(`/cart/${id}`),
+  clear: () => api.delete('/cart'),
+};
+
+// Wishlist API
+export const wishlistApi = {
+  get: () => api.get('/wishlist'),
+  getCount: () => api.get('/wishlist/count'),
+  check: (productId: string) => api.get(`/wishlist/check/${productId}`),
+  add: (productId: string) => api.post('/wishlist', { productId }),
+  remove: (id: string) => api.delete(`/wishlist/${id}`),
+  clear: () => api.delete('/wishlist'),
+};
+
+// Order API
+export const orderApi = {
+  getAll: (params?: { page?: number; limit?: number; status?: string; fromDate?: string; toDate?: string }) =>
+    api.get('/orders', { params }),
+  getMyOrders: (params?: { page?: number; limit?: number; status?: string }) =>
+    api.get('/orders/my-orders', { params }),
+  getById: (id: string) => api.get(`/orders/${id}`),
+  getByOrderId: (orderId: string) => api.get(`/orders/order-id/${orderId}`),
+  create: (data: { notes?: string; shippingAddress?: string; contactEmail?: string; contactPhone?: string }) =>
+    api.post('/orders', data),
+};
+
+// Offer API
+export const offerApi = {
+  getAll: (params?: { page?: number; limit?: number; isActive?: boolean }) =>
+    api.get('/offers', { params }),
+  getActive: () => api.get('/offers/active'),
+  getHomepage: () => api.get('/offers/homepage'),
+  getNavbar: () => api.get('/offers/navbar'),
+  getById: (id: string) => api.get(`/offers/${id}`),
+  getForProduct: (productId: string) => api.get(`/offers/product/${productId}`),
+};
+

@@ -25,12 +25,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.post('/user/login', { email, password });
-      const { token, user } = response.data;
+      const { accessToken, user } = response.data;
 
-      await SecureStore.setItemAsync('token', token);
+      await SecureStore.setItemAsync('token', accessToken);
       await SecureStore.setItemAsync('user', JSON.stringify(user));
 
-      set({ user, token, isLoading: false });
+      set({ user, token: accessToken, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Login failed',
@@ -49,12 +49,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
         phone,
       });
-      const { token, user } = response.data;
+      const { accessToken, user } = response.data;
 
-      await SecureStore.setItemAsync('token', token);
+      await SecureStore.setItemAsync('token', accessToken);
       await SecureStore.setItemAsync('user', JSON.stringify(user));
 
-      set({ user, token, isLoading: false });
+      set({ user, token: accessToken, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Registration failed',

@@ -14,44 +14,99 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/theme';
 import { useDataStore } from '../store/dataStore';
 import { useCartStore } from '../store/cartStore';
-import { useAuthStore } from '../store/authStore';
+import { Subcategory } from '../types';
 import { ProductCard } from '../components/common/ProductCard';
 import { SearchBar } from '../components/common/SearchBar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { OfferCard } from '../components/offers/OfferCard';
 
 const { width } = Dimensions.get('window');
 
+// Default images for subcategories (fallback when no image is set)
+const defaultSubcategoryImages: Record<string, string> = {
+  'Shirts': 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&h=750&fit=crop',
+  'T-Shirts': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=750&fit=crop',
+  'Premium Sweatshirts': 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600&h=750&fit=crop',
+  'Medium Sweatshirts': 'https://images.unsplash.com/photo-1578681994506-b8f463449011?w=600&h=750&fit=crop',
+  'Tracksuit': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=750&fit=crop',
+  'Jeans': 'https://images.unsplash.com/photo-1542272454315-4c01d7abdf4a?w=600&h=750&fit=crop',
+  'Shoes': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=750&fit=crop',
+  'Sunglasses': 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&h=750&fit=crop',
+  'Handbags': 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&h=750&fit=crop',
+  'offers': 'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=600&h=750&fit=crop',
+  'Top category': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=750&fit=crop',
+};
+
+// Helper function to get subcategory image with fallback
+const getSubcategoryImage = (subcategory: Subcategory): string => {
+  if (subcategory.image) return subcategory.image;
+
+  // Direct match
+  if (defaultSubcategoryImages[subcategory.name]) {
+    return defaultSubcategoryImages[subcategory.name];
+  }
+
+  // Case-insensitive match
+  const lowerName = subcategory.name.toLowerCase();
+  for (const [key, url] of Object.entries(defaultSubcategoryImages)) {
+    if (key.toLowerCase() === lowerName) {
+      return url;
+    }
+  }
+
+  // Partial match
+  for (const [key, url] of Object.entries(defaultSubcategoryImages)) {
+    if (lowerName.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerName)) {
+      return url;
+    }
+  }
+
+  // Default fallback image
+  return 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=750&fit=crop';
+};
+
 export const HomeScreen = ({ navigation }: any) => {
-  const { featuredProducts, subcategories, offers, fetchFeaturedProducts, fetchSubcategories, fetchOffers, isLoading } = useDataStore();
+  const {
+    featuredProducts,
+    allSubcategories,
+    homepageOffers,
+    fetchFeaturedProducts,
+    fetchAllSubcategories,
+    fetchHomepageOffers,
+    isLoadingProducts,
+    isLoadingOffers
+  } = useDataStore();
   const { addToCart } = useCartStore();
-  const { user } = useAuthStore();
   const [bestSellers, setBestSellers] = useState<any[]>([]);
 
   useEffect(() => {
     fetchFeaturedProducts(8);
-    fetchSubcategories();
-    fetchOffers();
+    fetchAllSubcategories();
+    fetchHomepageOffers();
   }, []);
 
   useEffect(() => {
-    if (subcategories.length > 0) {
-      setBestSellers(subcategories.slice(0, 10));
+    if (allSubcategories.length > 0) {
+      setBestSellers(allSubcategories.slice(0, 10));
     }
-  }, [subcategories]);
+  }, [allSubcategories]);
 
   const handleAddToCart = async (productId: string) => {
-    if (!user) {
-      navigation.navigate('Login');
-      return;
-    }
     try {
       await addToCart(productId, 1);
-    } catch (error) {
+      alert('Added to cart successfully!');
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
+      if (error.response?.status === 401 || error.message?.includes('401')) {
+        alert('Please login to add items to cart');
+        navigation.navigate('Login');
+      } else {
+        alert('Failed to add to cart. Please try again.');
+      }
     }
   };
 
-  if (isLoading && featuredProducts.length === 0) {
+  if (isLoadingProducts && featuredProducts.length === 0) {
     return <LoadingSpinner />;
   }
 
@@ -100,8 +155,10 @@ export const HomeScreen = ({ navigation }: any) => {
                 onPress={() => navigation.navigate('Products', { subcategoryId: item._id })}
               >
                 <Image
-                  source={{ uri: item.imageUrl || 'https://via.placeholder.com/200x250' }}
+                  source={{ uri: getSubcategoryImage(item) }}
                   style={styles.categoryImage}
+                  resizeMode="cover"
+                  onError={(error) => console.log('Image load error for', item.name, ':', error.nativeEvent.error)}
                 />
                 <Text style={styles.categoryName}>{item.name}</Text>
               </TouchableOpacity>
@@ -131,25 +188,29 @@ export const HomeScreen = ({ navigation }: any) => {
         </View>
 
         {/* Special Offers */}
-        {offers.length > 0 && (
+        {homepageOffers.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Special Offers</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Special Offers</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Offers')}>
+                <Text style={styles.viewAll}>View All</Text>
+              </TouchableOpacity>
+            </View>
             <FlatList
-              data={offers.slice(0, 5)}
+              data={homepageOffers.slice(0, 5)}
               horizontal
               showsHorizontalScrollIndicator={false}
               keyExtractor={(item) => item._id}
               renderItem={({ item }) => (
-                <View style={styles.offerCard}>
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.offerImage}
+                <View style={{ marginRight: 12 }}>
+                  <OfferCard
+                    offer={item}
+                    onPress={() => navigation.navigate('Products', {
+                      offerId: item._id,
+                      productIds: item.productIds.join(','),
+                      title: item.name
+                    })}
                   />
-                  <View style={styles.offerOverlay}>
-                    <Text style={styles.offerSubtitle}>{item.subtitle || 'Under'}</Text>
-                    <Text style={styles.offerPrice}>₹{item.price || '999'}</Text>
-                    <Text style={styles.offerCategory}>{item.category || item.title}</Text>
-                  </View>
                 </View>
               )}
             />

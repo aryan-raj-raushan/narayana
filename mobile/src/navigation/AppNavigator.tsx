@@ -17,6 +17,8 @@ import { OrdersScreen } from '../screens/OrdersScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { OffersScreen } from '../screens/OffersScreen';
+import { CategoriesScreen } from '../screens/CategoriesScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -120,6 +122,8 @@ export const AppNavigator = () => {
       <Stack.Screen name="Orders" component={OrdersScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Offers" component={OffersScreen} />
+      <Stack.Screen name="Categories" component={CategoriesScreen} />
     </Stack.Navigator>
   );
 };

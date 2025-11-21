@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,20 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../lib/theme';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
+import { orderApi } from '../lib/api';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const CartScreen = ({ navigation }: any) => {
   const { items, summary, isLoading, fetchCart, updateQuantity, removeFromCart, clearCart } = useCartStore();
   const { user } = useAuthStore();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -40,8 +43,65 @@ export const CartScreen = ({ navigation }: any) => {
   const handleClearCart = () => {
     Alert.alert('Clear Cart', 'Are you sure you want to clear your cart?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear', style: 'destructive', onPress: () => clearCart() },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await clearCart();
+            Alert.alert('Success', 'Your cart has been cleared');
+          } catch (error: any) {
+            console.error('Error clearing cart:', error);
+            Alert.alert('Error', error.response?.data?.message || 'Failed to clear cart');
+          }
+        }
+      },
     ]);
+  };
+
+  const handleCheckout = async () => {
+    if (items.length === 0) {
+      Alert.alert('Empty Cart', 'Please add items to your cart before checkout');
+      return;
+    }
+
+    if (!user) {
+      Alert.alert('Please Login', 'You need to login to place an order');
+      navigation.navigate('Login');
+      return;
+    }
+
+    setIsCheckingOut(true);
+    try {
+      // Create order with empty object (like frontend does)
+      const response = await orderApi.create({});
+
+      console.log('Order response:', response.data);
+
+      // Show success message with orderId
+      const orderId = response.data.orderId || response.data._id || response.data.id;
+      Alert.alert('Order Placed', `Your order #${orderId} has been placed successfully!`, [
+        {
+          text: 'OK',
+          onPress: async () => {
+            try {
+              // Clear cart and navigate to orders
+              await clearCart();
+              navigation.navigate('Orders');
+            } catch (err) {
+              console.error('Error clearing cart:', err);
+              navigation.navigate('Orders');
+            }
+          }
+        }
+      ]);
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      const errorMsg = error.response?.data?.message || 'Failed to place order. Please try again.';
+      Alert.alert('Error', errorMsg);
+    } finally {
+      setIsCheckingOut(false);
+    }
   };
 
   if (!user) {
@@ -147,8 +207,16 @@ export const CartScreen = ({ navigation }: any) => {
               <Text style={styles.totalValue}>₹{summary.total.toFixed(2)}</Text>
             </View>
 
-            <TouchableOpacity style={styles.checkoutButton}>
-              <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+            <TouchableOpacity
+              style={[styles.checkoutButton, isCheckingOut && { opacity: 0.6 }]}
+              onPress={handleCheckout}
+              disabled={isCheckingOut}
+            >
+              {isCheckingOut ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.clearButton} onPress={handleClearCart}>

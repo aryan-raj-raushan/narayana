@@ -18,7 +18,6 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ProductCard } from '../components/common/ProductCard';
 import { useCartStore } from '../store/cartStore';
 import { useWishlistStore } from '../store/wishlistStore';
-import { useAuthStore } from '../store/authStore';
 
 const { width } = Dimensions.get('window');
 
@@ -33,7 +32,6 @@ export const ProductDetailScreen = ({ navigation, route }: any) => {
 
   const { addToCart } = useCartStore();
   const { addToWishlist } = useWishlistStore();
-  const { user } = useAuthStore();
 
   useEffect(() => {
     fetchProduct();
@@ -42,13 +40,13 @@ export const ProductDetailScreen = ({ navigation, route }: any) => {
   const fetchProduct = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get(`/product/${productId}`);
-      setProduct(response.data);
+      const response = await api.get(`/products/${productId}`);
+      setProduct(response.data.data || response.data);
 
       // Fetch related products
-      if (response.data.relatedProductIds?.length > 0) {
-        const relatedResponse = await api.get(`/product?limit=4`);
-        setRelatedProducts(relatedResponse.data.products || relatedResponse.data);
+      if ((response.data.data || response.data).relatedProductIds?.length > 0) {
+        const relatedResponse = await api.get(`/products/featured?limit=4`);
+        setRelatedProducts(relatedResponse.data.data || relatedResponse.data);
       }
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -58,28 +56,32 @@ export const ProductDetailScreen = ({ navigation, route }: any) => {
   };
 
   const handleAddToCart = async () => {
-    if (!user) {
-      navigation.navigate('Login');
-      return;
-    }
     try {
       await addToCart(productId, quantity);
       alert('Added to cart!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
+      if (error.response?.status === 401 || error.message?.includes('401')) {
+        alert('Please login to add items to cart');
+        navigation.navigate('Login');
+      } else {
+        alert('Failed to add to cart. Please try again.');
+      }
     }
   };
 
   const handleAddToWishlist = async () => {
-    if (!user) {
-      navigation.navigate('Login');
-      return;
-    }
     try {
       await addToWishlist(productId);
       alert('Added to wishlist!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to wishlist:', error);
+      if (error.response?.status === 401 || error.message?.includes('401')) {
+        alert('Please login to add items to wishlist');
+        navigation.navigate('Login');
+      } else {
+        alert('Failed to add to wishlist. Please try again.');
+      }
     }
   };
 

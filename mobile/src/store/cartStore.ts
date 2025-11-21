@@ -49,11 +49,12 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
 
-  addToCart: async (productId: string, quantity: number) => {
+  addToCart: async (productId: string, quantity: number = 1) => {
     set({ isLoading: true, error: null });
     try {
-      await api.post('/cart/add', { productId, quantity });
+      await api.post('/cart', { productId, quantity });
       await get().fetchCart();
+      await get().fetchCount();
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Failed to add to cart',
@@ -92,7 +93,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   clearCart: async () => {
     set({ isLoading: true, error: null });
     try {
-      await api.post('/cart/clear');
+      await api.delete('/cart');
       set({
         items: [],
         summary: {
@@ -110,6 +111,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         error: error.response?.data?.message || 'Failed to clear cart',
         isLoading: false,
       });
+      throw error;
     }
   },
 
