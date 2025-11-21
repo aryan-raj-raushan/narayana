@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../lib/theme';
-import api from '../../lib/api';
+import { productApi } from '../../lib/api';
 import { Product } from '../../types';
 
 interface SearchBarProps {
@@ -39,11 +39,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const response = await api.get(`/product?search=${query}&limit=6`);
-        setResults(response.data.products || response.data);
+        const response = await productApi.getAll({
+          search: query,
+          limit: 6,
+          isActive: true,
+        });
+        const data = response.data.data || response.data || [];
+        setResults(Array.isArray(data) ? data : []);
         setShowResults(true);
       } catch (error) {
         console.error('Search error:', error);
+        setResults([]);
       } finally {
         setIsLoading(false);
       }
@@ -87,6 +93,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onProductSelect }) => {
           <FlatList
             data={results}
             keyExtractor={(item) => item._id}
+            scrollEnabled={true}
+            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+            scrollEventThrottle={16}
+            decelerationRate="fast"
+            bounces={true}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.resultItem}

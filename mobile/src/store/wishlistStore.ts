@@ -43,6 +43,7 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     try {
       await api.post('/wishlist', { productId });
       await get().fetchWishlist();
+      await get().fetchCount();
     } catch (error: any) {
       set({
         error: error.response?.data?.message || 'Failed to add to wishlist',
